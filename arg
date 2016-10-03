@@ -1,0 +1,14 @@
+#! /usr/bin/env bash
+
+BASE_DIR=`dirname "$0"`
+BASE_NAME=`basename $0`
+
+JAR_FILE="$BASE_DIR/bin/arg.jar"
+if ! [[ -f "$JAR_FILE" ]]; then
+  echo -e "$0: could not locate jarfile at '$JAR_FILE'\n" \
+      "You probably need to build the project; try running " \
+      "'$BASE_DIR/gradlew fatJar'"
+  exit 1
+fi
+
+java -jar "$JAR_FILE" "$@"

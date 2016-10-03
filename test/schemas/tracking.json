@@ -1,0 +1,267 @@
+{
+  "type": "record",
+  "name": "TrackingEvent",
+  "namespace": "com.wepay.events",
+  "doc": "Agenerictrackingeventtobetriggeredforallfront-endcalls.",
+  "fields": [
+    {
+      "name": "producerHeader",
+      "type": {
+        "type": "record",
+        "name": "ProducerHeader",
+        "doc": "AgenericproducerheaderthatmustbeusedforalleventssenttoKafka.",
+        "fields": [
+          {
+            "name": "serverIp",
+            "type": {
+              "type": "string",
+              "arg.regex": "(((([1-9]|(1[0-9]))?[0-9])|(2[0-4][0-9])|(25[0-5]))\\.){3}((([1-9]|(1[0-9]))?[0-9])|(2[0-4][0-9])|(25[0-5]))"
+            },
+            "doc": "TheIPaddressoftheserver."
+          },
+          {
+            "name": "serverHostname",
+            "type": [
+              "null",
+              "string"
+            ],
+            "doc": "Fullhostnameoftheservicewhichcontainstheserverenvironment.",
+            "default": null
+          },
+          {
+            "name": "service",
+            "type":
+              {
+                "type": "string",
+                "arg.options": [
+                  "monolith",
+                  "something else"
+                ]
+              },
+            "doc": "Thenameoftheservicethat'ssendingthemessage."
+          },
+          {
+            "name": "version",
+            "type":
+              {
+                "type": "string",
+                "arg.regex": "[0-2]\\.[0-9]\\.[0-9]{1,3}"
+              },
+            "doc": "Theversionoftheservicethat'ssendingthemessage."
+          },
+          {
+            "name": "commit",
+            "type": [
+              "null",
+              {
+                "type": "string",
+                "arg.options": [
+                  "commit1",
+                  "commit2",
+                  "commit4"
+                ]
+              }
+            ],
+            "doc": "Thelastgitcommitfortheservicethat'ssendingthemessage.",
+            "default": null
+          },
+          {
+            "name": "env",
+            "type":
+              {
+                "type": "string",
+                "arg.length":
+                  {
+                    "min": 4,
+                    "max": 17
+                  }
+              },
+            "doc": "Thestandardizedabbreviationoftheenvironment."
+          },
+          {
+            "name": "projectId",
+            "type":
+            {
+              "type": "string",
+              "arg.options": [
+                "steady-run-1337",
+                "mythic-crane-708"
+              ]
+            },
+            "doc": "Thenameoftheprojecttheservicethat'ssendingthemessageisdeployedin(e.g.googleCloudProjectId)."
+          },
+          {
+            "name": "timestamp",
+            "type": {
+              "type": "long",
+              "connect.name": "org.apache.kafka.connect.data.Timestamp",
+              "arg.options": [
+                1468791186023,
+                1468803748478
+              ]
+            },
+            "doc": "TheUnixepochmillisecondstimestampwhenthiseventwasgenerated."
+          },
+          {
+            "name": "uuid",
+            "type": {
+              "type": "fixed",
+              "name": "Uuid",
+              "size": 16,
+              "arg.options": [
+                "\u0000\u0003\u0006\u0009\u000C\u000F\u0012\u0015\u0018\u001B\u001E\u0021\u0024\u0027\u002A\u002D",
+                "UNIQUE  ID  HERE"
+              ]
+            },
+            "doc": "Auniqueidentifierforthemessage."
+          }
+        ]
+      }
+    },
+    {
+      "name": "trackingHeader",
+      "type": {
+        "type": "record",
+        "name": "TrackingHeader",
+        "doc": "AheaderthatcontainstrackingdetailsandHTTP-requestrelateddatathat'snotstrictlypartoftheHTTPrequest,itself.",
+        "fields": [
+          {
+            "name": "path",
+            "type": {
+              "type": "string",
+              "arg.regex": "(/user/[a-zA-Z0-9]{4,6}/)|(/pay/[a-zA-Z0-9]{4,6})|(/login/)|(/logout/)"
+            },
+            "doc": "ThepathoftheHTTPrequest."
+          },
+          {
+            "name": "type",
+            "type": {
+              "type": "string",
+              "arg.options": [
+                "payment",
+                "login",
+                "click"
+              ]
+            },
+            "doc": "Thetypeofthetrackingevent."
+          },
+          {
+            "name": "sessionId",
+            "type": {
+              "type": "string",
+              "arg.length": {
+                "min": 8,
+                "max": 16
+              }
+            },
+            "doc": "ThesessionIDfortheHTTPrequest."
+          },
+          {
+            "name": "ip",
+            "type": {
+              "type": "string",
+              "arg.regex": "(((([1-9]|(1[0-9]))?[0-9])|(2[0-4][0-9])|(25[0-5]))\\.){3}((([1-9]|(1[0-9]))?[0-9])|(2[0-4][0-9])|(25[0-5]))"
+            },
+            "doc": "Theuser'sIPv4orIPv6addressinstringrepresentation."
+          },
+          {
+            "name": "correlationId",
+            "type": "Uuid",
+            "doc": "AcorrelationIDthattiesatrackingeventtodownstreamservicecalls."
+          }
+        ]
+      }
+    },
+    {
+      "name": "httpHeader",
+      "type": {
+        "type": "record",
+        "name": "HttpHeader",
+        "doc": "ContainsasubsetofHTTPrequestfields.ThesefieldsareacamelCasemappingoftheactualHTTPrequestfieldnames.",
+        "fields": [
+          {
+            "name": "acceptLanguage",
+            "type": {
+              "type": "string",
+              "arg.options": [
+                "English",
+                "German",
+                "Japanese"
+              ]
+            },
+            "doc": "Accept-LanguageheaderfieldfromtheHTTPrequest."
+          },
+          {
+            "name": "referer",
+            "type": {
+              "type": "string",
+              "arg.regex": "(www\\.)?[a-z][a-z0-9]{0,9}\\.(com|org|net)"
+            },
+            "doc": "Referer(sic)headerfieldfromtheHTTPrequest."
+          },
+          {
+            "name": "userAgent",
+            "type": {
+              "type": "string",
+              "arg.options": [
+                "Mozilla Firefox (desktop)",
+                "Google Chrome (desktop)",
+                "iOS Safari (mobile)"
+              ]
+            },
+            "doc": "User-AgentheaderfieldfromtheHTTPrequest."
+          }
+        ]
+      }
+    },
+    {
+      "name": "ids",
+      "type": {
+        "type": "record",
+        "name": "Identifiers",
+        "doc": "Acollectionofidentifiersthatmightbeassociatedwithatrackingevent.",
+        "fields": [
+          {
+            "name": "appId",
+            "type": [
+              "null",
+              "string"
+            ],
+            "doc": "TheapplicationID,ifitexistsunderthecontextofthistrackingevent.",
+            "default": null
+          },
+          {
+            "name": "merchantId",
+            "type": [
+              "null",
+              "string"
+            ],
+            "doc": "ThemerchantID,ifitexistsunderthecontextofthistrackingevent.",
+            "default": null
+          },
+          {
+            "name": "userId",
+            "type": [
+              "null",
+              "string"
+            ],
+            "doc": "TheuserID,ifitexistsunderthecontextofthistrackingevent.",
+            "default": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "details",
+      "type": {
+        "type": "map",
+        "values": "string",
+        "arg.length": {
+          "min": 0,
+          "max": 4
+        }
+      },
+      "doc": "Miscellaneousfieldssuppliedbytheproducer."
+    }
+  ]
+}

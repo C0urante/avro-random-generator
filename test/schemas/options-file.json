@@ -1,0 +1,66 @@
+{
+  "type": "record",
+  "name": "sentence",
+  "fields": [
+    {
+      "name": "The",
+      "type": {
+        "type": "string",
+        "arg.options": [
+          "The"
+        ]
+      }
+    },
+    {
+      "name": "noun",
+      "type": {
+        "type": "string",
+        "arg.options": {
+          "file": "test/schemas/nouns-list.json",
+          "encoding": "json"
+        }
+      }
+    },
+    {
+      "name": "is",
+      "type": {
+        "type": "string",
+        "arg.options": [
+          "is",
+          "was",
+          "will be",
+          "is being",
+          "was being",
+          "has been",
+          "had been",
+          "will have been"
+        ]
+      }
+    },
+    {
+      "name": "degree",
+      "type": {
+        "type": "string",
+        "arg.options": [
+          "not at all",
+          "slightly",
+          "somewhat",
+          "kind of",
+          "pretty",
+          "very",
+          "entirely"
+        ]
+      }
+    },
+    {
+      "name": "adjective",
+      "type": {
+        "type": "string",
+        "arg.options": {
+          "file": "test/schemas/adjectives-list.json",
+          "encoding": "json"
+        }
+      }
+    }
+  ]
+}

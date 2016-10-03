@@ -1,0 +1,5 @@
+{
+  "name": "enum_comp",
+  "type": "enum",
+  "symbols": ["PRELUDE", "ALLEMANDE", "COURANTE", "SARABANDE", "MINUET", "BOURREE", "GAVOTTE", "GIGUE"]
+}

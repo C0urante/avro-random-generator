@@ -1,0 +1,62 @@
+{
+  "type": "record",
+  "name": "regex_test",
+  "fields":
+    [
+      {
+        "name": "no_length_property",
+        "type":
+          {
+            "type": "string",
+            "arg.regex": "[a-zA-Z]*",
+            "arg.length": 5
+          }
+      },
+      {
+        "name": "number_length_property",
+        "type":
+          {
+            "type": "string",
+            "arg.regex": "[a-zA-Z]*",
+            "arg.length": 10
+          }
+      },
+      {
+        "name": "min_length_property",
+        "type":
+          {
+            "type": "string",
+            "arg.regex": "[a-zA-Z]{0,15}",
+            "arg.length":
+              {
+                "min": 5
+              }
+          }
+      },
+      {
+        "name": "max_length_property",
+        "type":
+          {
+            "type": "string",
+            "arg.regex": "[a-zA-Z]{5,}",
+            "arg.length":
+              {
+                "max": 16
+              }
+          }
+      },
+      {
+        "name": "min_max_length_property",
+        "type":
+          {
+            "type": "string",
+            "arg.regex": "[a-zA-Z]*",
+            "arg.length":
+              {
+                "min": 5,
+                "max": 16
+              }
+          }
+      }
+    ]
+}

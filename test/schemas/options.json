@@ -1,0 +1,183 @@
+{
+  "type": "record",
+  "name": "options_test_record",
+  "fields": [
+    {
+      "name": "array_field",
+      "type": {
+        "type": "array",
+        "items": "string",
+        "arg.options": [
+          [
+            "Hello",
+            "world"
+          ],
+          [
+            "Goodbye",
+            "world"
+          ],
+          [
+            "We",
+            "meet",
+            "again",
+            "world"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "enum_field",
+      "type": {
+        "type": "enum",
+        "name": "enum_test",
+        "symbols": [
+          "HELLO",
+          "HI_THERE",
+          "GREETINGS",
+          "SALUTATIONS",
+          "GOODBYE"
+        ],
+        "arg.options": [
+          "HELLO",
+          "SALUTATIONS"
+        ]
+      }
+    },
+    {
+      "name": "fixed_field",
+      "type": {
+        "type": "fixed",
+        "name": "fixed_test",
+        "size": 2,
+        "arg.options": [
+          "\u0034\u0032",
+          "\u0045\u0045"
+        ]
+      }
+    },
+    {
+      "name": "map_field",
+      "type": {
+        "type": "map",
+        "values": "int",
+        "arg.options": [
+          {
+            "zero": 0
+          },
+          {
+            "one": 1,
+            "two": 2
+          },
+          {
+            "three": 3,
+            "four": 4,
+            "five": 5
+          },
+          {
+            "six": 6,
+            "seven": 7,
+            "eight": 8,
+            "nine": 9
+          }
+        ]
+      }
+    },
+    {
+      "name": "map_key_field",
+      "type": {
+        "type": "map",
+        "values": {
+          "type": "int",
+          "arg.options": [
+            -1,
+            0,
+            1
+          ]
+        },
+        "arg.length": 10,
+        "arg.keys": {
+          "arg.options": [
+            "negative",
+            "zero",
+            "positive"
+          ]
+        }
+      }
+    },
+    {
+      "name": "record_field",
+      "type": {
+        "type": "record",
+        "name": "record_test",
+        "fields": [
+          {
+            "name": "month",
+            "type": "string"
+          },
+          {
+            "name": "day",
+            "type": "int"
+          }
+        ],
+        "arg.options": [
+          {
+            "month": "January",
+            "day": 2
+          },
+          {
+            "month": "NANuary",
+            "day": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "union_field",
+      "type": [
+        "null",
+        {
+          "type": "boolean",
+          "arg.options": [
+            true
+          ]
+        },
+        {
+          "type": "int",
+          "arg.options": [
+            42
+          ]
+        },
+        {
+          "type": "long",
+          "arg.options": [
+            4242424242424242
+          ]
+        },
+        {
+          "type": "float",
+          "arg.options": [
+            42.42
+          ]
+        },
+        {
+          "type": "double",
+          "arg.options": [
+            42424242.42424242
+          ]
+        },
+        {
+          "type": "bytes",
+          "arg.options": [
+            "NDI="
+          ]
+        },
+        {
+          "type": "string",
+          "arg.options": [
+            "Forty-two"
+          ]
+        }
+      ]
+    }
+  ]
+}
