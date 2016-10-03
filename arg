@@ -7,7 +7,7 @@ JAR_FILE="$BASE_DIR/bin/arg.jar"
 if ! [[ -f "$JAR_FILE" ]]; then
   echo -e "$0: could not locate jarfile at '$JAR_FILE'\n" \
       "You probably need to build the project; try running " \
-      "'$BASE_DIR/gradlew fatJar'"
+      "'$BASE_DIR/gradlew distribute'"
   exit 1
 fi
 
