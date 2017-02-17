@@ -1,8 +1,10 @@
 {
   "type": "array",
   "items": "bytes",
-  "arg.length": {
-    "min": 10,
-    "max": 100
+  "arg.properties": {
+    "arg.length": {
+      "min": 10,
+      "max": 100
+    }
   }
 }

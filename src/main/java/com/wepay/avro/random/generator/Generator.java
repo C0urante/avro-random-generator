@@ -28,39 +28,43 @@ import java.nio.charset.StandardCharsets;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Random;
 
 public class Generator {
-  private static final String PROP_PREFIX = "arg.";
+
   private static final Schema.Parser schemaParser = new Schema.Parser();
   private static final Map<Schema, Generex> generexCache = new HashMap<>();
   private static final Map<Schema, List<Object>> optionsCache = new HashMap<>();
 
-  public static final String LENGTH_PROP = PROP_PREFIX + "length";
+  public static final String ARG_PROPERTIES_PROP = "arg.properties";
+
+  public static final String LENGTH_PROP = "length";
   public static final String LENGTH_PROP_MIN = "min";
   public static final String LENGTH_PROP_MAX = "max";
 
-  public static final String REGEX_PROP = PROP_PREFIX + "regex";
+  public static final String REGEX_PROP = "regex";
 
-  public static final String OPTIONS_PROP = PROP_PREFIX + "options";
+  public static final String OPTIONS_PROP = "options";
   public static final String OPTIONS_PROP_FILE = "file";
   public static final String OPTIONS_PROP_ENCODING = "encoding";
 
-  public static final String KEYS_PROP = PROP_PREFIX + "keys";
+  public static final String KEYS_PROP = "keys";
 
-  public static final String RANGE_PROP = PROP_PREFIX + "range";
+  public static final String RANGE_PROP = "range";
   public static final String RANGE_PROP_MIN = "min";
   public static final String RANGE_PROP_MAX = "max";
 
-  private final Schema schema;
+  private final Schema topLevelSchema;
   private final Random random;
 
-  public Generator(Schema schema, Random random) {
-    this.schema = schema;
+  public Generator(Schema topLevelSchema, Random random) {
+    this.topLevelSchema = topLevelSchema;
     this.random = random;
   }
 
@@ -77,49 +81,64 @@ public class Generator {
   }
 
   public Schema schema() {
-    return schema;
+    return topLevelSchema;
   }
 
   public Object generate() {
-    return generateObject(schema);
+    return generateObject(topLevelSchema);
   }
 
   private Object generateObject(Schema schema) {
-    Object optionsProp = schema.getObjectProp(OPTIONS_PROP);
-    if (optionsProp != null) {
-      return generateOption(schema, optionsProp);
+    Map propertiesProp = getProperties(schema).orElse(Collections.emptyMap());
+    if (propertiesProp != null && propertiesProp.containsKey(OPTIONS_PROP)) {
+      return generateOption(schema, propertiesProp);
     }
     switch (schema.getType()) {
       case ARRAY:
-        return generateArray(schema);
+        return generateArray(schema, propertiesProp);
       case BOOLEAN:
-        return generateBoolean(schema);
+        return generateBoolean(propertiesProp);
       case BYTES:
-        return generateBytes(schema);
+        return generateBytes(propertiesProp);
       case DOUBLE:
-        return generateDouble(schema);
+        return generateDouble(propertiesProp);
       case ENUM:
         return generateEnumSymbol(schema);
       case FIXED:
         return generateFixed(schema);
       case FLOAT:
-        return generateFloat(schema);
+        return generateFloat(propertiesProp);
       case INT:
-        return generateInt(schema);
+        return generateInt(propertiesProp);
       case LONG:
-        return generateLong(schema);
+        return generateLong(propertiesProp);
       case MAP:
-        return generateMap(schema);
+        return generateMap(schema, propertiesProp);
       case NULL:
-        return generateNull(schema);
+        return generateNull();
       case RECORD:
         return generateRecord(schema);
       case STRING:
-        return generateString(schema);
+        return generateString(schema, propertiesProp);
       case UNION:
         return generateUnion(schema);
       default:
         throw new RuntimeException("Unrecognized schema type: " + schema.getType());
+    }
+  }
+
+  private Optional<Map> getProperties(Schema schema) {
+    Object propertiesProp = schema.getObjectProp(ARG_PROPERTIES_PROP);
+    if (propertiesProp == null) {
+      return Optional.empty();
+    } else if (propertiesProp instanceof Map) {
+      return Optional.of((Map) propertiesProp);
+    } else {
+      throw new RuntimeException(String.format(
+          "%s property must be given as object, was %s instead",
+          ARG_PROPERTIES_PROP,
+          propertiesProp.getClass().getName()
+      ));
     }
   }
 
@@ -152,21 +171,22 @@ public class Generator {
   }
 
   @SuppressWarnings("unchecked")
-  private List<Object> parseOptions(Schema schema, Object optionsProp) {
-    if (schema.getObjectProp(LENGTH_PROP) != null) {
+  private List<Object> parseOptions(Schema schema, Map propertiesProp) {
+    if (propertiesProp.containsKey(LENGTH_PROP)) {
       throw new RuntimeException(String.format(
           "Cannot specify %s prop when %s prop is given",
           LENGTH_PROP,
           OPTIONS_PROP
       ));
     }
-    if (schema.getObjectProp(REGEX_PROP) != null) {
+    if (propertiesProp.containsKey(REGEX_PROP)) {
       throw new RuntimeException(String.format(
           "Cannot specify %s prop when %s prop is given",
           REGEX_PROP,
           OPTIONS_PROP
       ));
     }
+    Object optionsProp = propertiesProp.get(OPTIONS_PROP);
     if (optionsProp instanceof Collection) {
       Collection optionsList = (Collection) optionsProp;
       if (optionsList.isEmpty()) {
@@ -284,16 +304,16 @@ public class Generator {
   }
 
   @SuppressWarnings("unchecked")
-  private <T> T generateOption(Schema schema, Object optionsProp) {
+  private <T> T generateOption(Schema schema, Map propertiesProp) {
     if (!optionsCache.containsKey(schema)) {
-      optionsCache.put(schema, parseOptions(schema, optionsProp));
+      optionsCache.put(schema, parseOptions(schema, propertiesProp));
     }
     List<Object> options = optionsCache.get(schema);
     return (T) options.get(random.nextInt(options.size()));
   }
 
-  private Collection<Object> generateArray(Schema schema) {
-    int length = getLengthBounds(schema).random();
+  private Collection<Object> generateArray(Schema schema, Map propertiesProp) {
+    int length = getLengthBounds(propertiesProp).random();
     Collection<Object> result = new ArrayList<>(length);
     for (int i = 0; i < length; i++) {
       result.add(generateObject(schema.getElementType()));
@@ -301,18 +321,18 @@ public class Generator {
     return result;
   }
 
-  private Boolean generateBoolean(Schema schema) {
+  private Boolean generateBoolean(Map propertiesProp) {
     return random.nextBoolean();
   }
 
-  private ByteBuffer generateBytes(Schema schema) {
-    byte[] bytes = new byte[getLengthBounds(schema.getObjectProp(LENGTH_PROP)).random()];
+  private ByteBuffer generateBytes(Map propertiesProp) {
+    byte[] bytes = new byte[getLengthBounds(propertiesProp.get(LENGTH_PROP)).random()];
     random.nextBytes(bytes);
     return ByteBuffer.wrap(bytes);
   }
 
-  private Double generateDouble(Schema schema) {
-    Object rangeProp = schema.getObjectProp(RANGE_PROP);
+  private Double generateDouble(Map propertiesProp) {
+    Object rangeProp = propertiesProp.get(RANGE_PROP);
     if (rangeProp != null) {
       if (rangeProp instanceof Map) {
         Map rangeProps = (Map) rangeProp;
@@ -351,8 +371,8 @@ public class Generator {
     return new GenericData.Fixed(schema, bytes);
   }
 
-  private Float generateFloat(Schema schema) {
-    Object rangeProp = schema.getObjectProp(RANGE_PROP);
+  private Float generateFloat(Map propertiesProp) {
+    Object rangeProp = propertiesProp.get(RANGE_PROP);
     if (rangeProp != null) {
       if (rangeProp instanceof Map) {
         Map rangeProps = (Map) rangeProp;
@@ -388,8 +408,8 @@ public class Generator {
     return random.nextFloat();
   }
 
-  private Integer generateInt(Schema schema) {
-    Object rangeProp = schema.getObjectProp(RANGE_PROP);
+  private Integer generateInt(Map propertiesProp) {
+    Object rangeProp = propertiesProp.get(RANGE_PROP);
     if (rangeProp != null) {
       if (rangeProp instanceof Map) {
         Map rangeProps = (Map) rangeProp;
@@ -425,8 +445,8 @@ public class Generator {
     return random.nextInt();
   }
 
-  private Long generateLong(Schema schema) {
-    Object rangeProp = schema.getObjectProp(RANGE_PROP);
+  private Long generateLong(Map propertiesProp) {
+    Object rangeProp = propertiesProp.get(RANGE_PROP);
     if (rangeProp != null) {
       if (rangeProp instanceof Map) {
         Map rangeProps = (Map) rangeProp;
@@ -448,28 +468,28 @@ public class Generator {
     return random.nextLong();
   }
 
-  private Map<String, Object> generateMap(Schema schema) {
+  private Map<String, Object> generateMap(Schema schema, Map propertiesProp) {
     Map<String, Object> result = new HashMap<>();
-    int length = getLengthBounds(schema).random();
-    Object keyProp = schema.getObjectProp(KEYS_PROP);
+    int length = getLengthBounds(propertiesProp).random();
+    Object keyProp = propertiesProp.get(KEYS_PROP);
     if (keyProp == null) {
       for (int i = 0; i < length; i++) {
-        result.put(generateRandomString(schema, 1), generateObject(schema.getValueType()));
+        result.put(generateRandomString(1), generateObject(schema.getValueType()));
       }
     } else if (keyProp instanceof Map) {
-      Object optionsProp = ((Map) keyProp).get(OPTIONS_PROP);
-      if (optionsProp != null) {
+      Map keyPropMap = (Map) keyProp;
+      if (keyPropMap.containsKey(OPTIONS_PROP)) {
         if (!optionsCache.containsKey(schema)) {
-          optionsCache.put(schema, parseOptions(Schema.create(Schema.Type.STRING), optionsProp));
+          optionsCache.put(schema, parseOptions(Schema.create(Schema.Type.STRING), keyPropMap));
         }
-        for (Object option : optionsCache.get(schema)) {
-          result.put((String) option, generateObject(schema.getValueType()));
+        for (int i = 0; i < length; i++) {
+          result.put(generateOption(schema, keyPropMap), generateObject(schema.getValueType()));
         }
       } else {
-        int keyLength = getLengthBounds(((Map) keyProp).get(LENGTH_PROP)).random();
+        int keyLength = getLengthBounds(keyPropMap.get(LENGTH_PROP)).random();
         for (int i = 0; i < length; i++) {
           result.put(
-              generateRandomString(schema, keyLength),
+              generateRandomString(keyLength),
               generateObject(schema.getValueType())
           );
         }
@@ -483,7 +503,7 @@ public class Generator {
     return result;
   }
 
-  private Object generateNull(Schema schema) {
+  private Object generateNull() {
     return null;
   }
 
@@ -508,7 +528,7 @@ public class Generator {
     return generexCache.get(schema).random(lengthBounds.min(), lengthBounds.max() - 1);
   }
 
-  private String generateRandomString(Schema schema, int length) {
+  private String generateRandomString(int length) {
     byte[] bytes = new byte[length];
     for (int i = 0; i < length; i++) {
       bytes[i] = (byte) random.nextInt(128);
@@ -516,12 +536,12 @@ public class Generator {
     return new String(bytes, StandardCharsets.US_ASCII);
   }
 
-  private String generateString(Schema schema) {
-    Object regexProp = schema.getObjectProp(REGEX_PROP);
+  private String generateString(Schema schema, Map propertiesProp) {
+    Object regexProp = propertiesProp.get(REGEX_PROP);
     if (regexProp != null) {
-      return generateRegexString(schema, regexProp, getLengthBounds(schema));
+      return generateRegexString(schema, regexProp, getLengthBounds(propertiesProp));
     } else {
-      return generateRandomString(schema, getLengthBounds(schema).random());
+      return generateRandomString(getLengthBounds(propertiesProp).random());
     }
   }
 
@@ -530,8 +550,8 @@ public class Generator {
     return generateObject(schemas.get(random.nextInt(schemas.size())));
   }
 
-  private LengthBounds getLengthBounds(Schema schema) {
-    return getLengthBounds(schema.getObjectProp(LENGTH_PROP));
+  private LengthBounds getLengthBounds(Map propertiesProp) {
+    return getLengthBounds(propertiesProp.get(LENGTH_PROP));
   }
 
   private LengthBounds getLengthBounds(Object lengthProp) {

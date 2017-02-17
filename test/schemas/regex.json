@@ -8,8 +8,9 @@
         "type":
           {
             "type": "string",
-            "arg.regex": "[a-zA-Z]*",
-            "arg.length": 5
+            "arg.properties": {
+              "regex": "[a-zA-Z]{5,15}"
+            }
           }
       },
       {
@@ -17,8 +18,10 @@
         "type":
           {
             "type": "string",
-            "arg.regex": "[a-zA-Z]*",
-            "arg.length": 10
+            "arg.properties": {
+              "regex": "[a-zA-Z]*",
+              "length": 10
+            }
           }
       },
       {
@@ -26,11 +29,13 @@
         "type":
           {
             "type": "string",
-            "arg.regex": "[a-zA-Z]{0,15}",
-            "arg.length":
-              {
-                "min": 5
-              }
+            "arg.properties": {
+              "regex": "[a-zA-Z]{0,15}",
+              "length":
+                {
+                  "min": 5
+                }
+            }
           }
       },
       {
@@ -38,11 +43,13 @@
         "type":
           {
             "type": "string",
-            "arg.regex": "[a-zA-Z]{5,}",
-            "arg.length":
-              {
-                "max": 16
-              }
+            "arg.properties": {
+              "regex": "[a-zA-Z]{5,}",
+              "length":
+                {
+                  "max": 16
+                }
+            }
           }
       },
       {
@@ -50,12 +57,14 @@
         "type":
           {
             "type": "string",
-            "arg.regex": "[a-zA-Z]*",
-            "arg.length":
-              {
-                "min": 5,
-                "max": 16
-              }
+            "arg.properties": {
+              "regex": "[a-zA-Z]*",
+              "length":
+                {
+                  "min": 5,
+                  "max": 16
+                }
+            }
           }
       }
     ]

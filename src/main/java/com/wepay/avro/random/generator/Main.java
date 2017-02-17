@@ -51,6 +51,10 @@ public class Main {
   private static final boolean JSON_ENCODING = true;
   private static final boolean BINARY_ENCODING = false;
 
+  /**
+   * Parses options passed in via the args argument to main() and then leverages a new
+   * {@link Generator} object to produce randomized output according to the parsed options.
+   */
   public static void main(String[] args) {
     String schema = null;
     String schemaFile = "-";
@@ -248,7 +252,8 @@ public class Main {
             PRETTY_SHORT_FLAG,
             PRETTY_LONG_FLAG,
             separation,
-            "Output each record in prettified format (has no effect if encoding is not JSON) (default)"
+            "Output each record in prettified format (has no effect if encoding is not JSON)"
+              + "(default)"
         ) + String.format(
             "%s%s <schema>, %s <schema>:%s%s%n",
             indentation,

@@ -9,7 +9,7 @@
       { "name": "long_prim", "type": "long" },
       { "name": "float_prim", "type": "float" },
       { "name": "double_prim", "type": "double" },
-      { "name": "bytes_prim", "type": "bytes" }
       { "name": "string_prim", "type": "string" },
+      { "name": "bytes_prim", "type": "bytes" }
     ]
 }
