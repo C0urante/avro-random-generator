@@ -15,7 +15,9 @@
             "name": "serverIp",
             "type": {
               "type": "string",
-              "arg.regex": "(((([1-9]|(1[0-9]))?[0-9])|(2[0-4][0-9])|(25[0-5]))\\.){3}((([1-9]|(1[0-9]))?[0-9])|(2[0-4][0-9])|(25[0-5]))"
+              "arg.properties": {
+                "regex": "(((([1-9]|(1[0-9]))?[0-9])|(2[0-4][0-9])|(25[0-5]))\\.){3}((([1-9]|(1[0-9]))?[0-9])|(2[0-4][0-9])|(25[0-5]))"
+              }
             },
             "doc": "TheIPaddressoftheserver."
           },
@@ -33,10 +35,12 @@
             "type":
               {
                 "type": "string",
-                "arg.options": [
-                  "monolith",
-                  "something else"
-                ]
+                "arg.properties": {
+                  "options": [
+                    "monolith",
+                    "something else"
+                  ]
+                }
               },
             "doc": "Thenameoftheservicethat'ssendingthemessage."
           },
@@ -45,7 +49,9 @@
             "type":
               {
                 "type": "string",
-                "arg.regex": "[0-2]\\.[0-9]\\.[0-9]{1,3}"
+                "arg.properties": {
+                  "regex": "[0-2]\\.[0-9]\\.[0-9]{1,3}"
+                }
               },
             "doc": "Theversionoftheservicethat'ssendingthemessage."
           },
@@ -55,11 +61,13 @@
               "null",
               {
                 "type": "string",
-                "arg.options": [
-                  "commit1",
-                  "commit2",
-                  "commit4"
-                ]
+                "arg.properties": {
+                  "options": [
+                    "commit1",
+                    "commit2",
+                    "commit4"
+                  ]
+                }
               }
             ],
             "doc": "Thelastgitcommitfortheservicethat'ssendingthemessage.",
@@ -70,11 +78,12 @@
             "type":
               {
                 "type": "string",
-                "arg.length":
-                  {
+                "arg.properties": {
+                  "length": {
                     "min": 4,
                     "max": 17
                   }
+                }
               },
             "doc": "Thestandardizedabbreviationoftheenvironment."
           },
@@ -83,10 +92,12 @@
             "type":
             {
               "type": "string",
-              "arg.options": [
-                "steady-run-1337",
-                "mythic-crane-708"
-              ]
+              "arg.properties": {
+                "options": [
+                  "steady-run-1337",
+                  "mythic-crane-708"
+                ]
+              }
             },
             "doc": "Thenameoftheprojecttheservicethat'ssendingthemessageisdeployedin(e.g.googleCloudProjectId)."
           },
@@ -95,10 +106,12 @@
             "type": {
               "type": "long",
               "connect.name": "org.apache.kafka.connect.data.Timestamp",
-              "arg.options": [
-                1468791186023,
-                1468803748478
-              ]
+              "arg.properties": {
+                "options": [
+                  1468791186023,
+                  1468803748478
+                ]
+              }
             },
             "doc": "TheUnixepochmillisecondstimestampwhenthiseventwasgenerated."
           },
@@ -108,10 +121,12 @@
               "type": "fixed",
               "name": "Uuid",
               "size": 16,
-              "arg.options": [
-                "\u0000\u0003\u0006\u0009\u000C\u000F\u0012\u0015\u0018\u001B\u001E\u0021\u0024\u0027\u002A\u002D",
-                "UNIQUE  ID  HERE"
-              ]
+              "arg.properties": {
+                "options": [
+                  "\u0000\u0003\u0006\u0009\u000C\u000F\u0012\u0015\u0018\u001B\u001E\u0021\u0024\u0027\u002A\u002D",
+                  "UNIQUE  ID  HERE"
+                ]
+              }
             },
             "doc": "Auniqueidentifierforthemessage."
           }
@@ -129,7 +144,9 @@
             "name": "path",
             "type": {
               "type": "string",
-              "arg.regex": "(/user/[a-zA-Z0-9]{4,6}/)|(/pay/[a-zA-Z0-9]{4,6})|(/login/)|(/logout/)"
+              "arg.properties": {
+                "regex": "(/user/[a-zA-Z0-9]{4,6}/)|(/pay/[a-zA-Z0-9]{4,6})|(/login/)|(/logout/)"
+              }
             },
             "doc": "ThepathoftheHTTPrequest."
           },
@@ -137,11 +154,13 @@
             "name": "type",
             "type": {
               "type": "string",
-              "arg.options": [
-                "payment",
-                "login",
-                "click"
-              ]
+              "arg.properties": {
+                "options": [
+                  "payment",
+                  "login",
+                  "click"
+                ]
+              }
             },
             "doc": "Thetypeofthetrackingevent."
           },
@@ -149,9 +168,11 @@
             "name": "sessionId",
             "type": {
               "type": "string",
-              "arg.length": {
-                "min": 8,
-                "max": 16
+              "arg.properties": {
+                "length": {
+                  "min": 8,
+                  "max": 16
+                }
               }
             },
             "doc": "ThesessionIDfortheHTTPrequest."
@@ -160,7 +181,9 @@
             "name": "ip",
             "type": {
               "type": "string",
-              "arg.regex": "(((([1-9]|(1[0-9]))?[0-9])|(2[0-4][0-9])|(25[0-5]))\\.){3}((([1-9]|(1[0-9]))?[0-9])|(2[0-4][0-9])|(25[0-5]))"
+              "arg.properties": {
+                "regex": "(((([1-9]|(1[0-9]))?[0-9])|(2[0-4][0-9])|(25[0-5]))\\.){3}((([1-9]|(1[0-9]))?[0-9])|(2[0-4][0-9])|(25[0-5]))"
+              }
             },
             "doc": "Theuser'sIPv4orIPv6addressinstringrepresentation."
           },
@@ -183,11 +206,13 @@
             "name": "acceptLanguage",
             "type": {
               "type": "string",
-              "arg.options": [
-                "English",
-                "German",
-                "Japanese"
-              ]
+              "arg.properties": {
+                "options": [
+                  "English",
+                  "German",
+                  "Japanese"
+                ]
+              }
             },
             "doc": "Accept-LanguageheaderfieldfromtheHTTPrequest."
           },
@@ -195,7 +220,9 @@
             "name": "referer",
             "type": {
               "type": "string",
-              "arg.regex": "(www\\.)?[a-z][a-z0-9]{0,9}\\.(com|org|net)"
+              "arg.properties": {
+                "regex": "(www\\.)?[a-z][a-z0-9]{0,9}\\.(com|org|net)"
+              }
             },
             "doc": "Referer(sic)headerfieldfromtheHTTPrequest."
           },
@@ -203,11 +230,13 @@
             "name": "userAgent",
             "type": {
               "type": "string",
-              "arg.options": [
-                "Mozilla Firefox (desktop)",
-                "Google Chrome (desktop)",
-                "iOS Safari (mobile)"
-              ]
+              "arg.properties": {
+                "options": [
+                  "Mozilla Firefox (desktop)",
+                  "Google Chrome (desktop)",
+                  "iOS Safari (mobile)"
+                ]
+              }
             },
             "doc": "User-AgentheaderfieldfromtheHTTPrequest."
           }
@@ -256,9 +285,11 @@
       "type": {
         "type": "map",
         "values": "string",
-        "arg.length": {
-          "min": 0,
-          "max": 4
+        "arg.properties": {
+          "length": {
+            "min": 0,
+            "max": 4
+          }
         }
       },
       "doc": "Miscellaneousfieldssuppliedbytheproducer."

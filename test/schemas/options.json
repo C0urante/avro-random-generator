@@ -7,22 +7,25 @@
       "type": {
         "type": "array",
         "items": "string",
-        "arg.options": [
-          [
-            "Hello",
-            "world"
-          ],
-          [
-            "Goodbye",
-            "world"
-          ],
-          [
-            "We",
-            "meet",
-            "again",
-            "world"
-          ]
-        ]
+        "arg.properties":
+          {
+            "options": [
+              [
+                "Hello",
+                "world"
+              ],
+              [
+                "Goodbye",
+                "world"
+              ],
+              [
+                "We",
+                "meet",
+                "again",
+                "world"
+              ]
+            ]
+          }
       }
     },
     {
@@ -37,10 +40,13 @@
           "SALUTATIONS",
           "GOODBYE"
         ],
-        "arg.options": [
-          "HELLO",
-          "SALUTATIONS"
-        ]
+        "arg.properties":
+          {
+            "options": [
+              "HELLO",
+              "SALUTATIONS"
+            ]
+          }
       }
     },
     {
@@ -49,10 +55,13 @@
         "type": "fixed",
         "name": "fixed_test",
         "size": 2,
-        "arg.options": [
-          "\u0034\u0032",
-          "\u0045\u0045"
-        ]
+        "arg.properties":
+          {
+            "options": [
+              "\u0034\u0032",
+              "\u0045\u0045"
+            ]
+          }
       }
     },
     {
@@ -60,26 +69,29 @@
       "type": {
         "type": "map",
         "values": "int",
-        "arg.options": [
+        "arg.properties":
           {
-            "zero": 0
-          },
-          {
-            "one": 1,
-            "two": 2
-          },
-          {
-            "three": 3,
-            "four": 4,
-            "five": 5
-          },
-          {
-            "six": 6,
-            "seven": 7,
-            "eight": 8,
-            "nine": 9
+            "options": [
+              {
+                "zero": 0
+              },
+              {
+                "one": 1,
+                "two": 2
+              },
+              {
+                "three": 3,
+                "four": 4,
+                "five": 5
+              },
+              {
+                "six": 6,
+                "seven": 7,
+                "eight": 8,
+                "nine": 9
+              }
+            ]
           }
-        ]
       }
     },
     {
@@ -88,19 +100,23 @@
         "type": "map",
         "values": {
           "type": "int",
-          "arg.options": [
-            -1,
-            0,
-            1
-          ]
+          "arg.properties": {
+            "options": [
+              -1,
+              0,
+              1
+            ]
+          }
         },
-        "arg.length": 10,
-        "arg.keys": {
-          "arg.options": [
-            "negative",
-            "zero",
-            "positive"
-          ]
+        "arg.properties": {
+          "length": 10,
+          "keys": {
+            "options": [
+              "negative",
+              "zero",
+              "positive"
+            ]
+          }
         }
       }
     },
@@ -119,16 +135,18 @@
             "type": "int"
           }
         ],
-        "arg.options": [
-          {
-            "month": "January",
-            "day": 2
-          },
-          {
-            "month": "NANuary",
-            "day": 0
-          }
-        ]
+        "arg.properties": {
+          "options": [
+            {
+              "month": "January",
+              "day": 2
+            },
+            {
+              "month": "NANuary",
+              "day": 0
+            }
+          ]
+        }
       }
     },
     {
@@ -137,45 +155,59 @@
         "null",
         {
           "type": "boolean",
-          "arg.options": [
-            true
-          ]
+          "arg.properties": {
+            "options": [
+              true
+            ]
+          }
         },
         {
           "type": "int",
-          "arg.options": [
-            42
-          ]
+          "arg.properties": {
+            "options": [
+              42
+            ]
+          }
         },
         {
           "type": "long",
-          "arg.options": [
-            4242424242424242
-          ]
+          "arg.properties": {
+            "options": [
+              4242424242424242
+            ]
+          }
         },
         {
           "type": "float",
-          "arg.options": [
-            42.42
-          ]
+          "arg.properties": {
+            "options": [
+              42.42
+            ]
+          }
         },
         {
           "type": "double",
-          "arg.options": [
-            42424242.42424242
-          ]
+          "arg.properties": {
+            "options": [
+              42424242.42424242
+            ]
+          }
         },
         {
           "type": "bytes",
-          "arg.options": [
-            "NDI="
-          ]
+          "arg.properties": {
+            "options": [
+              "NDI="
+            ]
+          }
         },
         {
           "type": "string",
-          "arg.options": [
-            "Forty-two"
-          ]
+          "arg.properties": {
+            "options": [
+              "Forty-two"
+            ]
+          }
         }
       ]
     }

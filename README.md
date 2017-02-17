@@ -26,7 +26,9 @@ that narrow down the kind of data produced. For example, when spoofing
 a string, you can currently either specify a length that the string
 should be (or one or both of a minimum and maximum that the length
 should be), a list of possible strings that the string should come from,
-or a regular expression that the string should adhere to.
+or a regular expression that the string should adhere to. These
+annotations are specified inside the schema that Arg spoofs, as parts of
+a JSON object with an attribute name of "arg.properties".
 
 These annotations are specified as JSON properties in the schema that
 Arg spoofs. They should not collide with any existing properties, or
@@ -66,24 +68,24 @@ https://github.devops.wepay-inc.com/ChrisEgerton/avro-random-generator
 ### Annotation types
 
 The following annotations are currently supported:
-+ __arg.options:__ Either a JSON array of possibilities that the data for
++ __options:__ Either a JSON array of possibilities that the data for
 spoofing this schema should come from, or a JSON object that conforms to
 the following format: `{"file": <file>, "encoding": <encoding>}` (both
 fields must be specified). If given as an object, a list of data will be
 read from the file after decoding with the specified format (currently
 "json" and "binary" are the only supported values, and "binary" may be
 somewhat buggy).
-+ __arg.range:__ A JSON object that conforms to the following format:
++ __range:__ A JSON object that conforms to the following format:
 `{"min": <min>, "max": <max>}` (at least one of "min" or "max" must be
 specified). If provided, ensures that the generated number will be
 greater than or equal to <min> and/or strictly less than <max>.
-+ __arg.length:__ Either a JSON number or a JSON object that conforms to the
++ __length:__ Either a JSON number or a JSON object that conforms to the
 following format: `{"min": <min>, "max": <max>}` (at least one of "min"
 or "max" must be specified, and if present, values for either must be
 numbers). __Defaults to `{"min": 8, "max": 16}`__.
-+ __arg.regex:__ A JSON string describing a regular expression that a string
++ __regex:__ A JSON string describing a regular expression that a string
 should conform to.
-+ __arg.keys:__ A JSON object containing any of the above which is used to
++ __keys:__ A JSON object containing any of the above which is used to
 describe the kind of data that should be used for generating keys for
 spoofed maps.
 
@@ -92,62 +94,62 @@ The following schemas support the following annotations:
 ### Primitives
 
 #### null
-+ arg.options (although there can only be one option)
++ options (although there can only be one option)
 
 #### boolean
-+ arg.options
++ options
 
 #### int
-+ arg.options
-+ arg.range
++ options
++ range
 
 #### long
-+ arg.options
-+ arg.range
++ options
++ range
 
 #### float
-+ arg.options
-+ arg.range
++ options
++ range
 
 #### double
-+ arg.options
-+ arg.range
++ options
++ range
 
 #### bytes
-+ arg.options
-+ arg.length
++ options
++ length
 
 #### string
-+ arg.options
-+ arg.length*
-+ arg.regex*
++ options
++ length*
++ regex*
 
-__*Note:__ If both arg.length and arg.regex are specified for a string,
+__*Note:__ If both length and regex are specified for a string,
 the length property (if a JSON number) becomes a minimum length for the
 string
 
 ### Complex
 
 #### array
-+ arg.options
-+ arg.length
++ options
++ length
 
 #### enum
-+ arg.options
++ options
 
 #### fixed
-+ arg.options
++ options
 
 #### map
-+ arg.options
-+ arg.length
-+ arg.keys
++ options
++ length
++ keys
 
 #### record
-+ arg.options
++ options
 
 #### union
-+ arg.options
++ options
 
 ### Example schemas
 
@@ -179,7 +181,9 @@ enum chosen from the symbols list.
         "type":
           {
             "type": "string",
-            "arg.regex": "[a-zA-Z]{5,15}",
+            "arg.properties": {
+              "regex": "[a-zA-Z]{5,15}"
+            }
           }
       },
       {
@@ -187,8 +191,10 @@ enum chosen from the symbols list.
         "type":
           {
             "type": "string",
-            "arg.regex": "[a-zA-Z]*",
-            "arg.length": 10
+            "arg.properties": {
+              "regex": "[a-zA-Z]*",
+              "length": 10
+            }
           }
       },
       {
@@ -196,11 +202,13 @@ enum chosen from the symbols list.
         "type":
           {
             "type": "string",
-            "arg.regex": "[a-zA-Z]{0,15}",
-            "arg.length":
-              {
-                "min": 5
-              }
+            "arg.properties": {
+              "regex": "[a-zA-Z]{0,15}",
+              "length":
+                {
+                  "min": 5
+                }
+            }
           }
       },
       {
@@ -208,11 +216,13 @@ enum chosen from the symbols list.
         "type":
           {
             "type": "string",
-            "arg.regex": "[a-zA-Z]{5,}",
-            "arg.length":
-              {
-                "max": 16
-              }
+            "arg.properties": {
+              "regex": "[a-zA-Z]{5,}",
+              "length":
+                {
+                  "max": 16
+                }
+            }
           }
       },
       {
@@ -220,12 +230,14 @@ enum chosen from the symbols list.
         "type":
           {
             "type": "string",
-            "arg.regex": "[a-zA-Z]*",
-            "arg.length":
-              {
-                "min": 5,
-                "max": 16
-              }
+            "arg.properties": {
+              "regex": "[a-zA-Z]*",
+              "length":
+                {
+                  "min": 5,
+                  "max": 16
+                }
+            }
           }
       }
     ]
@@ -234,7 +246,7 @@ enum chosen from the symbols list.
 
 An annotated record schema, with a variety of string fields. Each field
 has its own way of preventing the specified string from becoming too
-long, either via the arg.length annotation or the arg.regex annotation.
+long, either via the length annotation or the regex annotation.
 
 ### options-file.json
 
@@ -247,18 +259,22 @@ long, either via the arg.length annotation or the arg.regex annotation.
       "name": "The",
       "type": {
         "type": "string",
-        "arg.options": [
-          "The"
-        ]
+          "arg.properties": {
+            "options": [
+              "The"
+            ]
+          }
       }
     },
     {
       "name": "noun",
       "type": {
         "type": "string",
-        "arg.options": {
-          "file": "test/schemas/nouns-list.json",
-          "encoding": "json"
+        "arg.properties": {
+          "options": {
+            "file": "test/schemas/nouns-list.json",
+            "encoding": "json"
+          }
         }
       }
     },
@@ -266,46 +282,51 @@ long, either via the arg.length annotation or the arg.regex annotation.
       "name": "is",
       "type": {
         "type": "string",
-        "arg.options": [
-          "is",
-          "was",
-          "will be",
-          "is being",
-          "was being",
-          "has been",
-          "had been",
-          "will have been"
-        ]
+        "arg.properties": {
+          "options": [
+            "is",
+            "was",
+            "will be",
+            "is being",
+            "was being",
+            "has been",
+            "had been",
+            "will have been"
+          ]
+        }
       }
     },
     {
       "name": "degree",
       "type": {
         "type": "string",
-        "arg.options": [
-          "not at all",
-          "slightly",
-          "somewhat",
-          "kind of",
-          "pretty",
-          "very",
-          "entirely"
-        ]
+        "arg.properties": {
+          "options": [
+            "not at all",
+            "slightly",
+            "somewhat",
+            "kind of",
+            "pretty",
+            "very",
+            "entirely"
+          ]
+        }
       }
     },
     {
       "name": "adjective",
       "type": {
         "type": "string",
-        "arg.options": {
-          "file": "test/schemas/adjectives-list.json",
-          "encoding": "json"
+        "arg.properties": {
+          "options": {
+            "file": "test/schemas/adjectives-list.json",
+            "encoding": "json"
+          }
         }
       }
     }
   ]
 }
-
 ```
 
 A record schema that draws its content from two files, 'nouns-list.json'
@@ -325,22 +346,25 @@ to work with it properly due, to the relative paths of the files.
       "type": {
         "type": "array",
         "items": "string",
-        "arg.options": [
-          [
-            "Hello",
-            "world"
-          ],
-          [
-            "Goodbye",
-            "world"
-          ],
-          [
-            "We",
-            "meet",
-            "again",
-            "world"
-          ]
-        ]
+        "arg.properties":
+          {
+            "options": [
+              [
+                "Hello",
+                "world"
+              ],
+              [
+                "Goodbye",
+                "world"
+              ],
+              [
+                "We",
+                "meet",
+                "again",
+                "world"
+              ]
+            ]
+          }
       }
     },
     {
@@ -355,10 +379,13 @@ to work with it properly due, to the relative paths of the files.
           "SALUTATIONS",
           "GOODBYE"
         ],
-        "arg.options": [
-          "HELLO",
-          "SALUTATIONS"
-        ]
+        "arg.properties":
+          {
+            "options": [
+              "HELLO",
+              "SALUTATIONS"
+            ]
+          }
       }
     },
     {
@@ -367,10 +394,13 @@ to work with it properly due, to the relative paths of the files.
         "type": "fixed",
         "name": "fixed_test",
         "size": 2,
-        "arg.options": [
-          "\u0034\u0032",
-          "\u0045\u0045"
-        ]
+        "arg.properties":
+          {
+            "options": [
+              "\u0034\u0032",
+              "\u0045\u0045"
+            ]
+          }
       }
     },
     {
@@ -378,26 +408,29 @@ to work with it properly due, to the relative paths of the files.
       "type": {
         "type": "map",
         "values": "int",
-        "arg.options": [
+        "arg.properties":
           {
-            "zero": 0
-          },
-          {
-            "one": 1,
-            "two": 2
-          },
-          {
-            "three": 3,
-            "four": 4,
-            "five": 5
-          },
-          {
-            "six": 6,
-            "seven": 7,
-            "eight": 8,
-            "nine": 9
+            "options": [
+              {
+                "zero": 0
+              },
+              {
+                "one": 1,
+                "two": 2
+              },
+              {
+                "three": 3,
+                "four": 4,
+                "five": 5
+              },
+              {
+                "six": 6,
+                "seven": 7,
+                "eight": 8,
+                "nine": 9
+              }
+            ]
           }
-        ]
       }
     },
     {
@@ -406,19 +439,23 @@ to work with it properly due, to the relative paths of the files.
         "type": "map",
         "values": {
           "type": "int",
-          "arg.options": [
-            -1,
-            0,
-            1
-          ]
+          "arg.properties": {
+            "options": [
+              -1,
+              0,
+              1
+            ]
+          }
         },
-        "arg.length": 10,
-        "arg.keys": {
-          "arg.options": [
-            "negative",
-            "zero",
-            "positive"
-          ]
+        "arg.properties": {
+          "length": 10,
+          "keys": {
+            "options": [
+              "negative",
+              "zero",
+              "positive"
+            ]
+          }
         }
       }
     },
@@ -437,16 +474,18 @@ to work with it properly due, to the relative paths of the files.
             "type": "int"
           }
         ],
-        "arg.options": [
-          {
-            "month": "January",
-            "day": 2
-          },
-          {
-            "month": "NANuary",
-            "day": 0
-          }
-        ]
+        "arg.properties": {
+          "options": [
+            {
+              "month": "January",
+              "day": 2
+            },
+            {
+              "month": "NANuary",
+              "day": 0
+            }
+          ]
+        }
       }
     },
     {
@@ -455,45 +494,59 @@ to work with it properly due, to the relative paths of the files.
         "null",
         {
           "type": "boolean",
-          "arg.options": [
-            true
-          ]
+          "arg.properties": {
+            "options": [
+              true
+            ]
+          }
         },
         {
           "type": "int",
-          "arg.options": [
-            42
-          ]
+          "arg.properties": {
+            "options": [
+              42
+            ]
+          }
         },
         {
           "type": "long",
-          "arg.options": [
-            4242424242424242
-          ]
+          "arg.properties": {
+            "options": [
+              4242424242424242
+            ]
+          }
         },
         {
           "type": "float",
-          "arg.options": [
-            42.42
-          ]
+          "arg.properties": {
+            "options": [
+              42.42
+            ]
+          }
         },
         {
           "type": "double",
-          "arg.options": [
-            42424242.42424242
-          ]
+          "arg.properties": {
+            "options": [
+              42424242.42424242
+            ]
+          }
         },
         {
           "type": "bytes",
-          "arg.options": [
-            "NDI="
-          ]
+          "arg.properties": {
+            "options": [
+              "NDI="
+            ]
+          }
         },
         {
           "type": "string",
-          "arg.options": [
-            "Forty-two"
-          ]
+          "arg.properties": {
+            "options": [
+              "Forty-two"
+            ]
+          }
         }
       ]
     }
@@ -502,6 +555,5 @@ to work with it properly due, to the relative paths of the files.
 ```
 
 A schema where every field is annotated with an example usage of the
-arg.options annotation, as well as an example of the arg.keys
-annotation.
+options annotation, as well as an example of the keys annotation.
 
