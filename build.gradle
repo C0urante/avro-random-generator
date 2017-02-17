@@ -28,6 +28,10 @@ task distribute(type: Jar) {
     with jar
 }
 
+clean << {
+    new File("$rootDir/bin").deleteDir()
+}
+
 repositories {
     jcenter()
 }
