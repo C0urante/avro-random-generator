@@ -60,6 +60,19 @@ public class Generator {
   public static final String RANGE_PROP_MIN = "min";
   public static final String RANGE_PROP_MAX = "max";
 
+  // TODO:    Enable the user to specify iteration for numeric types so that successive
+  // TODO:  randomly-generated Avro objects have deterministically increasing/decreasing values.
+  // TODO:  Also, possibly consider adding something like this for booleans (although it wouldn't
+  // TODO:  be anything more than alternation between true and false).
+  public static final String ITERATION_PROP = "iteration";
+  public static final String ITERATION_PROP_MIN = "start";
+  public static final String ITERATION_PROP_MAX = "restart";
+  public static final String ITERATION_PROP_STEP = "step";
+
+  // TODO:    Enable the user to specify that numeric/string types should be given the value of
+  // TODO:  System.currentTimeMillis().
+  public static final String TIME_PROP = "time";
+
   private final Schema topLevelSchema;
   private final Random random;
 
@@ -321,6 +334,8 @@ public class Generator {
     return result;
   }
 
+  // TODO:    Consider allowing the user to specify the probability that the resulting boolean is
+  // TODO:  true.
   private Boolean generateBoolean(Map propertiesProp) {
     return random.nextBoolean();
   }
