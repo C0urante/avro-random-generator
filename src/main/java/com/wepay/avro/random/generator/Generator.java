@@ -60,6 +60,8 @@ public class Generator {
   public static final String RANGE_PROP_MIN = "min";
   public static final String RANGE_PROP_MAX = "max";
 
+  public static final String ODDS_PROP = "odds";
+
   // TODO:    Enable the user to specify iteration for numeric types so that successive
   // TODO:  randomly-generated Avro objects have deterministically increasing/decreasing values.
   // TODO:  Also, possibly consider adding something like this for booleans (although it wouldn't
@@ -76,9 +78,12 @@ public class Generator {
   private final Schema topLevelSchema;
   private final Random random;
 
+  private long iterations;
+
   public Generator(Schema topLevelSchema, Random random) {
     this.topLevelSchema = topLevelSchema;
     this.random = random;
+    this.iterations = 0;
   }
 
   public Generator(String schemaString, Random random) {
@@ -101,11 +106,22 @@ public class Generator {
     return generateObject(topLevelSchema);
   }
 
+  public void resetIterations() {
+    iterations = 0;
+  }
+
+  public long getIterations() {
+    return iterations;
+  }
+
   private Object generateObject(Schema schema) {
     Map propertiesProp = getProperties(schema).orElse(Collections.emptyMap());
-    if (propertiesProp != null && propertiesProp.containsKey(OPTIONS_PROP)) {
+    if (propertiesProp.containsKey(OPTIONS_PROP)) {
       return generateOption(schema, propertiesProp);
     }
+//    if (propertiesProp.containsKey(ITERATION_PROP)) {
+//      return generateIteration(schema, propertiesProp);
+//    }
     switch (schema.getType()) {
       case ARRAY:
         return generateArray(schema, propertiesProp);
@@ -334,10 +350,13 @@ public class Generator {
     return result;
   }
 
-  // TODO:    Consider allowing the user to specify the probability that the resulting boolean is
-  // TODO:  true.
   private Boolean generateBoolean(Map propertiesProp) {
-    return random.nextBoolean();
+    Double odds = getDecimalNumberField(ARG_PROPERTIES_PROP, ODDS_PROP, "number", propertiesProp, 0.0, 1.0);
+    if (odds == null) {
+      return random.nextBoolean();
+    } else {
+      return random.nextDouble() < odds;
+    }
   }
 
   private ByteBuffer generateBytes(Map propertiesProp) {

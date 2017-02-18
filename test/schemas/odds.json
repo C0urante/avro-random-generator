@@ -1,0 +1,7 @@
+{
+  "name":"odds_example",
+  "type":"boolean",
+  "arg.properties": {
+    "odds": 0.75
+  }
+}
