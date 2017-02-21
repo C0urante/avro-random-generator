@@ -186,8 +186,6 @@ public class Generator {
 
   @SuppressWarnings("unchecked")
   private List<Object> parseOptions(Schema schema, Map propertiesProp) {
-    // TODO:    Review this portion, and see if more checks for conflicting properties
-    // TODO:  (like RANGE_PROP) are necessary
     if (propertiesProp.containsKey(LENGTH_PROP)) {
       throw new RuntimeException(String.format(
           "Cannot specify %s prop when %s prop is given",
@@ -206,6 +204,13 @@ public class Generator {
       throw new RuntimeException(String.format(
           "Cannot specify %s prop when %s prop is given",
           ITERATION_PROP,
+          OPTIONS_PROP
+      ));
+    }
+    if (propertiesProp.containsKey(RANGE_PROP)) {
+      throw new RuntimeException(String.format(
+          "Cannot specify %s prop when %s prop is given",
+          RANGE_PROP,
           OPTIONS_PROP
       ));
     }
@@ -336,8 +341,6 @@ public class Generator {
   }
 
   private Iterator<Object> parseIterations(Schema schema, Map propertiesProp) {
-    // TODO:    Review this portion, and see if more checks for conflicting properties
-    // TODO:  (like RANGE_PROP) are necessary
     if (propertiesProp.containsKey(LENGTH_PROP)) {
       throw new RuntimeException(String.format(
           "Cannot specify %s prop when %s prop is given",
@@ -356,6 +359,13 @@ public class Generator {
       throw new RuntimeException(String.format(
           "Cannot specify %s prop when %s prop is given",
           OPTIONS_PROP,
+          ITERATION_PROP
+      ));
+    }
+    if (propertiesProp.containsKey(RANGE_PROP)) {
+      throw new RuntimeException(String.format(
+          "Cannot specify %s prop when %s prop is given",
+          RANGE_PROP,
           ITERATION_PROP
       ));
     }
