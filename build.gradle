@@ -28,7 +28,7 @@ task distribute(type: Jar) {
     with jar
 }
 
-clean << {
+clean.doLast {
     new File("$rootDir/bin").deleteDir()
 }
 
@@ -42,6 +42,8 @@ dependencies {
     compile group: 'org.apache.avro', name: 'avro', version: '1.8.1'
 
     compile group: 'com.github.mifmif', name: 'generex', version: '1.0.1'
+
+    compile group: 'com.google.code.findbugs', name: 'annotations', version: '3.0.1'
 
     ////////////////////////////////////////////////////////////////
 
