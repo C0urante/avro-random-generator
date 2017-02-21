@@ -821,8 +821,9 @@ public class Generator {
         }
         default:
           throw new UnsupportedOperationException(String.format(
-              "%s property currently not supported on that schema type",
-              ITERATION_PROP
+              "%s property can only be specified on numeric and boolean schemas, not %s schema",
+              ITERATION_PROP,
+              schema.getType().toString()
           ));
       }
     } else {
