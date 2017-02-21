@@ -58,8 +58,8 @@ Flags:
     -p, --pretty:	Output each record in prettified format (has no effect if encoding is not JSON) (default)
     -s &lt;schema&gt;, --schema &lt;schema&gt;:	Spoof the schema &lt;schema&gt;
 
-Currently on WePay's private GitHub:
-https://github.devops.wepay-inc.com/ChrisEgerton/avro-random-generator
+Currently on Chris Egerton's public GitHub:
+https://github.com/C0urante/avro-random-generator
 </pre>
 
 
@@ -75,10 +75,22 @@ fields must be specified). If given as an object, a list of data will be
 read from the file after decoding with the specified format (currently
 "json" and "binary" are the only supported values, and "binary" may be
 somewhat buggy).
++ __iteration:__ A JSON object that conforms to the following format:
+`{"start": <start>, "restart": <restart>, "step": <step>}` ("start" has
+to be specified, but "restart" and "step" do not). If provided with a
+numeric schema, ensures that the first generated value will be equal to
+&lt;start&gt;, and successive values will increase by &lt;step&gt;,
+wrapping around at &lt;restart&gt;; &lt;step&gt; will default to 1 if
+&lt;restart&gt; is greater than &lt;step&gt;, will default to -1 if
+&lt;restart&gt; is less than &lt;step&gt;, and an error will be thrown
+if &lt;restart&gt; is equal to &lt;step&gt;. If provided with a boolean
+schema, only &lt;start&gt; may be specified; the resulting values will
+begin with &lt;start&gt; and alternate from `true` to `false` and from
+`false` to `true` from that point on.
 + __range:__ A JSON object that conforms to the following format:
 `{"min": <min>, "max": <max>}` (at least one of "min" or "max" must be
 specified). If provided, ensures that the generated number will be
-greater than or equal to <min> and/or strictly less than <max>.
+greater than or equal to &lt;min&gt; and/or strictly less than &lt;max&gt;.
 + __length:__ Either a JSON number or a JSON object that conforms to the
 following format: `{"min": <min>, "max": <max>}` (at least one of "min"
 or "max" must be specified, and if present, values for either must be
@@ -88,6 +100,9 @@ should conform to.
 + __keys:__ A JSON object containing any of the above which is used to
 describe the kind of data that should be used for generating keys for
 spoofed maps.
++ __odds:__ A JSON float between 0.0 and 1.0 that, when specified with
+a boolean schema, specifies the likelihood that the generated value is
+`true`.
 
 The following schemas support the following annotations:
 
@@ -98,22 +113,28 @@ The following schemas support the following annotations:
 
 #### boolean
 + options
++ iteration
++ odds
 
 #### int
 + options
 + range
++ iteration
 
 #### long
 + options
 + range
++ iteration
 
 #### float
 + options
 + range
++ iteration
 
 #### double
 + options
 + range
++ iteration
 
 #### bytes
 + options

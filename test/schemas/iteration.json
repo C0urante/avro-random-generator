@@ -1,0 +1,68 @@
+{ "type": "record",
+  "name": "iteration",
+  "namespace": "com.wepay.kafka.connect.bigquery",
+  "fields":
+    [
+      {
+        "name": "boolean_iteration",
+        "type": {
+          "type": "boolean",
+          "arg.properties": {
+            "iteration": {
+              "start": false
+            }
+          }
+        }
+      },
+      {
+        "name": "int_iteration",
+        "type": {
+          "type": "int",
+          "arg.properties": {
+            "iteration": {
+              "start": 50,
+              "restart": -10
+            }
+          }
+        }
+      },
+      {
+        "name": "long_iteration",
+        "type": {
+          "type": "long",
+          "arg.properties": {
+            "iteration": {
+              "start": -50,
+              "restart": 100,
+              "step": 47
+            }
+          }
+        }
+      },
+      {
+        "name": "float_iteration",
+        "type": {
+          "type":"float",
+          "arg.properties": {
+            "iteration": {
+              "start": 10.4,
+              "step": 5.1
+            }
+          }
+        }
+      },
+      {
+        "name": "double_iteration",
+        "type": {
+          "type": "double",
+          "arg.properties": {
+            "iteration": {
+              "start": 0.0,
+              "restart": 10.0,
+              "step": 27.3
+            }
+          }
+        }
+      }
+    ]
+}
