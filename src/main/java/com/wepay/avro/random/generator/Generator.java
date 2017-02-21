@@ -1005,7 +1005,7 @@ public class Generator {
               RANGE_PROP
           ));
         }
-        return rangeMin + (((long) random.nextDouble() * (rangeMax - rangeMin)));
+        return rangeMin + (((long) (random.nextDouble() * (rangeMax - rangeMin))));
       }
     }
     return random.nextLong();
