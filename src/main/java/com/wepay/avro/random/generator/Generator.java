@@ -71,10 +71,6 @@ public class Generator {
   public static final String ITERATION_PROP_RESTART = "restart";
   public static final String ITERATION_PROP_STEP = "step";
 
-  // TODO:    Enable the user to specify that numeric/string types should be given the value of
-  // TODO:  System.currentTimeMillis().
-  public static final String TIME_PROP = "time";
-
   private final Schema topLevelSchema;
   private final Random random;
 
