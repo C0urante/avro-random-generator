@@ -1,4 +1,4 @@
-package com.wepay.avro.random.generator;
+package io.confluent.avro.random.generator;
 
 import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.io.Encoder;

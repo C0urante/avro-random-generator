@@ -1,4 +1,4 @@
-package com.wepay.avro.random.generator;
+package io.confluent.avro.random.generator;
 
 import com.mifmif.common.regex.Generex;
 
@@ -38,6 +38,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 
+/**
+ * Generates Java objects according to an {@link Schema Avro Schema}.
+ */
 public class Generator {
 
   private static final Schema.Parser schemaParser = new Schema.Parser();
@@ -45,55 +48,220 @@ public class Generator {
   private static final Map<Schema, List<Object>> optionsCache = new HashMap<>();
   private static final Map<Schema, Iterator<Object>> iteratorCache = new HashMap<>();
 
+  /**
+   * The name to use for the top-level JSON property when specifying ARG-specific attributes.
+   */
   public static final String ARG_PROPERTIES_PROP = "arg.properties";
 
+  /**
+   * The name of the attribute for specifying length for supported schemas. Can be given as either
+   * an integral number or an object with at least one of {@link #LENGTH_PROP_MIN} or
+   * {@link #LENGTH_PROP_MAX} specified.
+   */
   public static final String LENGTH_PROP = "length";
+  /**
+   * The name of the attribute for specifying the minimum length a generated value should have.
+   * Must be given as an integral number greater than or equal to zero.
+   */
   public static final String LENGTH_PROP_MIN = "min";
+  /**
+   * The name of the attribute for specifying the maximum length a generated value should have.
+   * Must be given as an integral number strictly greater than the value given for
+   * {@link #LENGTH_PROP_MIN}, or strictly greater than zero if none is specified.
+   */
   public static final String LENGTH_PROP_MAX = "max";
 
+  /**
+   * The name of the attribute for specifying a regex that generated values should adhere to. Can
+   * be used in conjunction with {@link #LENGTH_PROP}. Must be given as a string.
+   */
   public static final String REGEX_PROP = "regex";
 
+  /**
+   * The name of the attribute for specifying specific values which should be randomly chosen from
+   * when generating values for the schema. Can be given as either an array of values or an object
+   * with both {@link #OPTIONS_PROP_FILE} and {@link #OPTIONS_PROP_ENCODING}
+   * specified.
+   */
   public static final String OPTIONS_PROP = "options";
+  /**
+   * The name of a file from which to read specific values to generate for the given schema. Must
+   * be given as a string.
+   */
   public static final String OPTIONS_PROP_FILE = "file";
+  /**
+   * The encoding of the options file; currently only "binary" and "json" are supported. Must be
+   * given as a string.
+   */
   public static final String OPTIONS_PROP_ENCODING = "encoding";
 
+  /**
+   * The name of the attribute for specifying special properties for keys in map schemas. Since
+   * all Avro maps have keys of type string, no schema is supplied to specify key attributes; this
+   * special keys attribute takes its place. Must be given as an object.
+   */
   public static final String KEYS_PROP = "keys";
 
+  /**
+   * The name of the attribute for specifying a possible range of values for numeric types. Must be
+   * given as an object.
+   */
   public static final String RANGE_PROP = "range";
+  /**
+   * The name of the attribute for specifying the (inclusive) minimum value in a range. Must be
+   * given as a numeric type that is integral if the given schema is as well.
+   */
   public static final String RANGE_PROP_MIN = "min";
+  /**
+   * The name of the attribute for specifying the (exclusive) maximum value in a range. Must be
+   * given as a numeric type that is integral if the given schema is as well.
+   */
   public static final String RANGE_PROP_MAX = "max";
 
+  /**
+   * The name of the attribute for specifying the likelihood that the value true is generated for a
+   * boolean schema. Must be given as a floating type in the range [0.0, 1.0].
+   */
   public static final String ODDS_PROP = "odds";
 
+  /**
+   * The name of the attribute for specifying iterative behavior for generated values. Must be
+   * given as an object with at least the {@link #ITERATION_PROP_START} property specified. The
+   * first generated value for the schema will then be equal to the value given for
+   * {@link #ITERATION_PROP_START}, and successive values will increment by the value given for
+   * {@link #ITERATION_PROP_STEP} (or its default, if no value is given), wrapping around at the
+   * value given for {@link #ITERATION_PROP_RESTART} (or its default, if no value is given).
+   */
   public static final String ITERATION_PROP = "iteration";
+  /**
+   * The name of the attribute for specifying the first value in a schema with iterative
+   * generation. Must be given as a numeric type that is integral if the given schema is as well.
+   */
   public static final String ITERATION_PROP_START = "start";
+  /**
+   * The name of the attribute for specifying the wraparound value in a schema with iterative
+   * generation. If given, must be a numeric type that is integral if the given schema is as well.
+   * If not given, defaults to the maximum possible value for the schema type if the value for
+   * {@link #ITERATION_PROP_STEP} is positive, or the minimum possible value for the schema type if
+   * the value for {@link #ITERATION_PROP_STEP} is negative.
+   */
   public static final String ITERATION_PROP_RESTART = "restart";
+  /**
+   * The name of the attribute for specifying the increment value in a schema with iterative
+   * generation. If given, must be a numeric type that is integral if the given schema is as well.
+   * If not given, defaults to 1 if the value for {@link #ITERATION_PROP_RESTART} is greater than
+   * the value for {@link #ITERATION_PROP_START}, and -1 if the value for
+   * {@link #ITERATION_PROP_RESTART} is less than the value for {@link #ITERATION_PROP_START}.
+   */
   public static final String ITERATION_PROP_STEP = "step";
 
   private final Schema topLevelSchema;
   private final Random random;
 
+  /**
+   * Creates a generator out of an already-parsed {@link Schema}.
+   * @param topLevelSchema The schema to generate values for.
+   * @param random The object to use for generating randomness when producing values.
+   */
   public Generator(Schema topLevelSchema, Random random) {
     this.topLevelSchema = topLevelSchema;
     this.random = random;
   }
 
+  /**
+   * Creates a generator out of the yet-to-be-parsed Schema string.
+   * @param schemaString An Avro Schema represented as a string.
+   * @param random The object to use for generating randomness when producing values.
+   */
   public Generator(String schemaString, Random random) {
     this(schemaParser.parse(schemaString), random);
   }
 
+  /**
+   * Reads in a schema, parses it, and creates a generator for it.
+   * @param schemaStream The stream that the schema is read from.
+   * @param random The object to use for generating randomness when producing values.
+   * @throws IOException if an error occurs while reading from the input stream.
+   */
   public Generator(InputStream schemaStream, Random random) throws IOException {
     this(schemaParser.parse(schemaStream), random);
   }
 
+  /**
+   * Reads in a schema, parses it, and creates a generator for it.
+   * @param schemaFile The file that contains the schema to generate values for.
+   * @param random The object to use for generating randomness when producing values.
+   * @throws IOException if an error occurs while reading from the schema file.
+   */
   public Generator(File schemaFile, Random random) throws IOException {
     this(schemaParser.parse(schemaFile), random);
   }
 
+  /**
+   * @return The schema that the generator produces values for.
+   */
   public Schema schema() {
     return topLevelSchema;
   }
 
+  /**
+   * Generate an object that matches the given schema and its specified properties.
+   * @return An object whose type corresponds to the top-level schema as follows:
+   * <table summary="Schema Type-to-Java class specifications">
+   *   <tr>
+   *     <th>Schema Type</th>
+   *     <th>Java Class</th>
+   *   </tr>
+   *   <tr>
+   *     <td>{@link org.apache.avro.Schema.Type#ARRAY ARRAY}</td>
+   *     <td>{@link Collection}</td>
+   *   <tr>
+   *     <td>{@link org.apache.avro.Schema.Type#BOOLEAN BOOLEAN}</td>
+   *     <td>{@link Boolean}</td>
+   *   <tr>
+   *     <td>{@link org.apache.avro.Schema.Type#BYTES BYTES}</td>
+   *     <td>{@link ByteBuffer}</td>
+   *   <tr>
+   *     <td>{@link org.apache.avro.Schema.Type#DOUBLE DOUBLE}</td>
+   *     <td>{@link Double}</td>
+   *   <tr>
+   *     <td>{@link org.apache.avro.Schema.Type#ENUM ENUM}</td>
+   *     <td>{@link GenericEnumSymbol}</td>
+   *   <tr>
+   *     <td>{@link org.apache.avro.Schema.Type#FIXED FIXED}</td>
+   *     <td>{@link GenericFixed}</td>
+   *   <tr>
+   *     <td>{@link org.apache.avro.Schema.Type#FLOAT FLOAT}</td>
+   *     <td>{@link Float}</td>
+   *   <tr>
+   *     <td>{@link org.apache.avro.Schema.Type#INT INT}</td>
+   *     <td>{@link Integer}</td>
+   *   <tr>
+   *     <td>{@link org.apache.avro.Schema.Type#LONG LONG}</td>
+   *     <td>{@link Long}</td>
+   *   <tr>
+   *     <td>{@link org.apache.avro.Schema.Type#MAP MAP}</td>
+   *     <td>
+   *       {@link Map}&lt;{@link String}, V&gt; where V is the corresponding Java class for the
+   *       Avro map's values
+   *     </td>
+   *   <tr>
+   *     <td>{@link org.apache.avro.Schema.Type#NULL NULL}</td>
+   *     <td>{@link Object} (but will always be null)</td>
+   *   <tr>
+   *     <td>{@link org.apache.avro.Schema.Type#RECORD RECORD}</td>
+   *     <td>{@link GenericRecord}</td>
+   *   <tr>
+   *     <td>{@link org.apache.avro.Schema.Type#STRING STRING}</td>
+   *     <td>{@link String}</td>
+   *   <tr>
+   *     <td>{@link org.apache.avro.Schema.Type#UNION UNION}</td>
+   *     <td>
+   *       The corresponding Java class for whichever schema is chosen to be generated out of the
+   *       ones present in the given Avro union.
+   *     </td>
+   * </table>
+   */
   public Object generate() {
     return generateObject(topLevelSchema);
   }

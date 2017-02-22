@@ -8,7 +8,7 @@ version = '0.1'
 
 jar {
     manifest {
-        attributes  'Implementation-Title': 'Kafka-BigQuery Connector',
+        attributes  'Implementation-Title': 'Avro Random Generator',
                     'Implementation-Version': version
     }
 }
@@ -23,7 +23,7 @@ task distribute(type: Jar) {
         }
     }
     manifest {
-        attributes 'Main-Class': 'com.wepay.avro.random.generator.Main'
+        attributes 'Main-Class': 'io.confluent.avro.random.generator.Main'
     }
     with jar
 }
@@ -53,4 +53,9 @@ dependencies {
 checkstyle {
     configFile = file("${project.rootDir}/config/checkstyle/google_checks.xml")
     toolVersion = '6.18'
+}
+
+javadoc {
+    options.links 'https://docs.oracle.com/javase/8/docs/api/'
+    options.links 'https://avro.apache.org/docs/1.8.1/api/java/'
 }
