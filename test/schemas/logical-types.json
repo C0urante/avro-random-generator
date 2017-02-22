@@ -1,6 +1,6 @@
 { "type": "record",
   "name": "logicals",
-  "namespace": "com.wepay.kafka.connect.bigquery",
+  "namespace": "io.confluent.avro.random.generator",
   "fields":
     [
       { "name": "row", "type": "int" },

@@ -1,6 +1,6 @@
 { "type": "record",
   "name": "iteration",
-  "namespace": "com.wepay.kafka.connect.bigquery",
+  "namespace": "io.confluent.avro.random.generator",
   "fields":
     [
       {
