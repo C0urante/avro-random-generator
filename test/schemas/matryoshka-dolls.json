@@ -1,6 +1,6 @@
 { "type": "record",
   "name": "outer_doll",
-  "namespace": "com.wepay.kafka.connect.bigquery",
+  "namespace": "io.confluent.avro.random.generator",
   "fields": [
       { "name": "middle", "type":
         { "type": "record",
@@ -31,7 +31,7 @@
       },
       {
         "name": "inner",
-        "type": "com.wepay.kafka.connect.bigquery.inner_doll"
+        "type": "io.confluent.avro.random.generator.inner_doll"
       }
             ]
 }

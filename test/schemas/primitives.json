@@ -1,6 +1,6 @@
 { "type": "record",
   "name": "primitives",
-  "namespace": "com.wepay.kafka.connect.bigquery",
+  "namespace": "io.confluent.avro.random.generator",
   "fields":
     [
       { "name": "null_prim", "type": ["null", "int"] },
