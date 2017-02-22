@@ -35,7 +35,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 
@@ -156,6 +155,21 @@ public class Generator {
     }
   }
 
+  private void enforceMutualExclusion(
+      Map propertiesProp,
+      String includedProp,
+      String... excludedProps) {
+    for (String excludedProp : excludedProps) {
+      if (propertiesProp.containsKey(excludedProp)) {
+        throw new RuntimeException(String.format(
+            "Cannot specify %s prop when %s prop is given",
+            excludedProp,
+            includedProp
+        ));
+      }
+    }
+  }
+
   @SuppressWarnings("unchecked")
   private Object wrapOption(Schema schema, Object option) {
     if (schema.getType() == Schema.Type.BYTES && option instanceof String) {
@@ -186,34 +200,11 @@ public class Generator {
 
   @SuppressWarnings("unchecked")
   private List<Object> parseOptions(Schema schema, Map propertiesProp) {
-    if (propertiesProp.containsKey(LENGTH_PROP)) {
-      throw new RuntimeException(String.format(
-          "Cannot specify %s prop when %s prop is given",
-          LENGTH_PROP,
-          OPTIONS_PROP
-      ));
-    }
-    if (propertiesProp.containsKey(REGEX_PROP)) {
-      throw new RuntimeException(String.format(
-          "Cannot specify %s prop when %s prop is given",
-          REGEX_PROP,
-          OPTIONS_PROP
-      ));
-    }
-    if (propertiesProp.containsKey(ITERATION_PROP)) {
-      throw new RuntimeException(String.format(
-          "Cannot specify %s prop when %s prop is given",
-          ITERATION_PROP,
-          OPTIONS_PROP
-      ));
-    }
-    if (propertiesProp.containsKey(RANGE_PROP)) {
-      throw new RuntimeException(String.format(
-          "Cannot specify %s prop when %s prop is given",
-          RANGE_PROP,
-          OPTIONS_PROP
-      ));
-    }
+    enforceMutualExclusion(
+        propertiesProp, OPTIONS_PROP,
+        LENGTH_PROP, REGEX_PROP, ITERATION_PROP, RANGE_PROP
+    );
+
     Object optionsProp = propertiesProp.get(OPTIONS_PROP);
     if (optionsProp instanceof Collection) {
       Collection optionsList = (Collection) optionsProp;
@@ -340,179 +331,296 @@ public class Generator {
     return (T) options.get(random.nextInt(options.size()));
   }
 
+  private Iterator<Object> getBooleanIterator(Map iterationProps) {
+    Object startProp = iterationProps.get(ITERATION_PROP_START);
+    if (startProp == null) {
+      throw new RuntimeException(String.format(
+          "%s property must contain %s field",
+          ITERATION_PROP,
+          ITERATION_PROP_START
+      ));
+    }
+    if (!(startProp instanceof Boolean)) {
+      throw new RuntimeException(String.format(
+          "%s field of %s property for a boolean schema must be a boolean, was %s instead",
+          ITERATION_PROP_START,
+          ITERATION_PROP,
+          startProp.getClass().getName()
+      ));
+    }
+    if (iterationProps.containsKey(ITERATION_PROP_RESTART)) {
+      throw new RuntimeException(String.format(
+          "%s property cannot contain %s field for a boolean schema",
+          ITERATION_PROP,
+          ITERATION_PROP_RESTART
+      ));
+    }
+    if (iterationProps.containsKey(ITERATION_PROP_STEP)) {
+      throw new RuntimeException(String.format(
+          "%s property cannot contain %s field for a boolean schema",
+          ITERATION_PROP,
+          ITERATION_PROP_STEP
+      ));
+    }
+    return new BooleanIterator((Boolean) startProp);
+  }
+
+  private Iterator<Object> getIntegralIterator(
+      Long iterationStartField,
+      Long iterationRestartField,
+      Long iterationStepField,
+      IntegralIterator.Type type) {
+
+    if (iterationStartField == null) {
+      throw new RuntimeException(String.format(
+          "%s property must contain %s field",
+          ITERATION_PROP,
+          ITERATION_PROP_START
+      ));
+    }
+
+    long iterationStart = iterationStartField;
+    long iterationRestart;
+    long iterationStep;
+
+    long restartHighDefault;
+    long restartLowDefault;
+    switch (type) {
+      case INTEGER:
+        restartHighDefault = Integer.MAX_VALUE;
+        restartLowDefault = Integer.MIN_VALUE;
+        break;
+      case LONG:
+        restartHighDefault = Long.MAX_VALUE;
+        restartLowDefault = Long.MIN_VALUE;
+        break;
+      default:
+        throw new RuntimeException(String.format(
+            "Unexpected IntegralIterator type: %s",
+            type
+        ));
+    }
+
+    if (iterationRestartField == null && iterationStepField == null) {
+      iterationRestart = restartHighDefault;
+      iterationStep = 1;
+    } else if (iterationRestartField == null) {
+      iterationStep = iterationStepField;
+      if (iterationStep > 0) {
+        iterationRestart = restartHighDefault;
+      } else if (iterationStep < 0) {
+        iterationRestart = -1 * restartLowDefault;
+      } else {
+        throw new RuntimeException(String.format(
+            "%s field of %s property cannot be zero",
+            ITERATION_PROP_STEP,
+            ITERATION_PROP
+        ));
+      }
+    } else if (iterationStepField == null) {
+      iterationRestart = iterationRestartField;
+      if (iterationRestart > iterationStart) {
+        iterationStep = 1;
+      } else if (iterationRestart < iterationStart) {
+        iterationStep = -1;
+      } else {
+        throw new RuntimeException(String.format(
+            "%s and %s fields of %s property cannot be equal",
+            ITERATION_PROP_START,
+            ITERATION_PROP_RESTART,
+            ITERATION_PROP
+        ));
+      }
+    } else {
+      iterationRestart = iterationRestartField;
+      iterationStep = iterationStepField;
+      if (iterationStep == 0) {
+        throw new RuntimeException(String.format(
+            "%s field of %s property cannot be zero",
+            ITERATION_PROP_STEP,
+            ITERATION_PROP
+        ));
+      }
+      if (iterationStart == iterationRestart) {
+        throw new RuntimeException(String.format(
+            "%s and %s fields of %s property cannot be equal",
+            ITERATION_PROP_START,
+            ITERATION_PROP_RESTART,
+            ITERATION_PROP
+        ));
+      }
+      if (iterationRestart > iterationStart && iterationStep < 0) {
+        throw new RuntimeException(String.format(
+            "%s field of %s property must be positive when %s field is greater than %s field",
+            ITERATION_PROP_STEP,
+            ITERATION_PROP,
+            ITERATION_PROP_RESTART,
+            ITERATION_PROP_START
+        ));
+      }
+      if (iterationRestart < iterationStart && iterationStep > 0) {
+        throw new RuntimeException(String.format(
+            "%s field of %s property must be negative when %s field is less than %s field",
+            ITERATION_PROP_STEP,
+            ITERATION_PROP,
+            ITERATION_PROP_RESTART,
+            ITERATION_PROP_START
+        ));
+      }
+    }
+
+    return new IntegralIterator(
+        iterationStart,
+        iterationRestart,
+        iterationStep,
+        type
+    );
+  }
+
+  private Iterator<Object> getDecimalIterator(
+      Double iterationStartField,
+      Double iterationRestartField,
+      Double iterationStepField,
+      DecimalIterator.Type type) {
+
+    if (iterationStartField == null) {
+      throw new RuntimeException(String.format(
+          "%s property must contain %s field",
+          ITERATION_PROP,
+          ITERATION_PROP_START
+      ));
+    }
+
+    double iterationStart = iterationStartField;
+    double iterationRestart;
+    double iterationStep;
+
+    double restartHighDefault;
+    double restartLowDefault;
+    switch (type) {
+      case FLOAT:
+        restartHighDefault = Float.MAX_VALUE;
+        restartLowDefault = -1 * Float.MAX_VALUE;
+        break;
+      case DOUBLE:
+        restartHighDefault = Double.MAX_VALUE;
+        restartLowDefault = -1 * Double.MAX_VALUE;
+        break;
+      default:
+        throw new RuntimeException(String.format(
+            "Unexpected DecimalIterator type: %s",
+            type
+        ));
+    }
+
+    if (iterationRestartField == null && iterationStepField == null) {
+      iterationRestart = restartHighDefault;
+      iterationStep = 1;
+    } else if (iterationRestartField == null) {
+      iterationStep = iterationStepField;
+      if (iterationStep > 0) {
+        iterationRestart = restartHighDefault;
+      } else if (iterationStep < 0) {
+        iterationRestart = -1 * restartLowDefault;
+      } else {
+        throw new RuntimeException(String.format(
+            "%s field of %s property cannot be zero",
+            ITERATION_PROP_STEP,
+            ITERATION_PROP
+        ));
+      }
+    } else if (iterationStepField == null) {
+      iterationRestart = iterationRestartField;
+      if (iterationRestart > iterationStart) {
+        iterationStep = 1;
+      } else if (iterationRestart < iterationStart) {
+        iterationStep = -1;
+      } else {
+        throw new RuntimeException(String.format(
+            "%s and %s fields of %s property cannot be equal",
+            ITERATION_PROP_START,
+            ITERATION_PROP_RESTART,
+            ITERATION_PROP
+        ));
+      }
+    } else {
+      iterationRestart = iterationRestartField;
+      iterationStep = iterationStepField;
+      if (iterationStep == 0) {
+        throw new RuntimeException(String.format(
+            "%s field of %s property cannot be zero",
+            ITERATION_PROP_STEP,
+            ITERATION_PROP
+        ));
+      }
+      if (iterationStart == iterationRestart) {
+        throw new RuntimeException(String.format(
+            "%s and %s fields of %s property cannot be equal",
+            ITERATION_PROP_START,
+            ITERATION_PROP_RESTART,
+            ITERATION_PROP
+        ));
+      }
+      if (iterationRestart > iterationStart && iterationStep < 0) {
+        throw new RuntimeException(String.format(
+            "%s field of %s property must be positive when %s field is greater than %s field",
+            ITERATION_PROP_STEP,
+            ITERATION_PROP,
+            ITERATION_PROP_RESTART,
+            ITERATION_PROP_START
+        ));
+      }
+      if (iterationRestart < iterationStart && iterationStep > 0) {
+        throw new RuntimeException(String.format(
+            "%s field of %s property must be negative when %s field is less than %s field",
+            ITERATION_PROP_STEP,
+            ITERATION_PROP,
+            ITERATION_PROP_RESTART,
+            ITERATION_PROP_START
+        ));
+      }
+    }
+
+    return new DecimalIterator(
+        iterationStart,
+        iterationRestart,
+        iterationStep,
+        type
+    );
+  }
+
   private Iterator<Object> parseIterations(Schema schema, Map propertiesProp) {
-    if (propertiesProp.containsKey(LENGTH_PROP)) {
-      throw new RuntimeException(String.format(
-          "Cannot specify %s prop when %s prop is given",
-          LENGTH_PROP,
-          ITERATION_PROP
-      ));
-    }
-    if (propertiesProp.containsKey(REGEX_PROP)) {
-      throw new RuntimeException(String.format(
-          "Cannot specify %s prop when %s prop is given",
-          REGEX_PROP,
-          ITERATION_PROP
-      ));
-    }
-    if (propertiesProp.containsKey(OPTIONS_PROP)) {
-      throw new RuntimeException(String.format(
-          "Cannot specify %s prop when %s prop is given",
-          OPTIONS_PROP,
-          ITERATION_PROP
-      ));
-    }
-    if (propertiesProp.containsKey(RANGE_PROP)) {
-      throw new RuntimeException(String.format(
-          "Cannot specify %s prop when %s prop is given",
-          RANGE_PROP,
-          ITERATION_PROP
-      ));
-    }
-    Object iterationsProp = propertiesProp.get(ITERATION_PROP);
-    if (iterationsProp instanceof Map) {
-      Map iterationsProps = (Map) iterationsProp;
-      // TODO: Reduce code duplication inside this switch statement
+    enforceMutualExclusion(
+        propertiesProp, ITERATION_PROP,
+        LENGTH_PROP, REGEX_PROP, OPTIONS_PROP, RANGE_PROP
+    );
+
+    Object iterationProp = propertiesProp.get(ITERATION_PROP);
+    if (iterationProp instanceof Map) {
+      Map iterationProps = (Map) iterationProp;
       switch (schema.getType()) {
-        case BOOLEAN: {
-          Object startProp = iterationsProps.get(ITERATION_PROP_START);
-          if (startProp == null) {
-            throw new RuntimeException(String.format(
-                "%s property must contain %s field",
-                ITERATION_PROP,
-                ITERATION_PROP_START
-            ));
-          }
-          if (!(startProp instanceof Boolean)) {
-            throw new RuntimeException(String.format(
-                "%s field of %s property for a boolean schema must be a boolean, was %s instead",
-                ITERATION_PROP_START,
-                ITERATION_PROP,
-                startProp.getClass().getName()
-            ));
-          }
-          if (iterationsProps.containsKey(ITERATION_PROP_RESTART)) {
-            throw new RuntimeException(String.format(
-                "%s property cannot contain %s field for a boolean schema",
-                ITERATION_PROP,
-                ITERATION_PROP_RESTART
-            ));
-          }
-          if (iterationsProps.containsKey(ITERATION_PROP_STEP)) {
-            throw new RuntimeException(String.format(
-                "%s property cannot contain %s field for a boolean schema",
-                ITERATION_PROP,
-                ITERATION_PROP_STEP
-            ));
-          }
-          return new BooleanIterator((Boolean) startProp);
-        }
+        case BOOLEAN:
+          return getBooleanIterator(iterationProps);
         case INT: {
-          Long iterationStartField = getIntegralNumberField(
+          Integer iterationStartField = getIntegerNumberField(
               ITERATION_PROP,
               ITERATION_PROP_START,
-              "int",
-              iterationsProps,
-              (long) Integer.MIN_VALUE,
-              (long) Integer.MAX_VALUE
+              iterationProps
           );
-          if (iterationStartField == null) {
-            throw new RuntimeException(String.format(
-                "%s property must contain %s field",
-                ITERATION_PROP,
-                ITERATION_PROP_START
-            ));
-          }
-          Long iterationRestartField = getIntegralNumberField(
+          Integer iterationRestartField = getIntegerNumberField(
               ITERATION_PROP,
               ITERATION_PROP_RESTART,
-              "int",
-              iterationsProps,
-              (long) Integer.MIN_VALUE,
-              (long) Integer.MAX_VALUE
+              iterationProps
           );
-          Long iterationStepField = getIntegralNumberField(
+          Integer iterationStepField = getIntegerNumberField(
               ITERATION_PROP,
               ITERATION_PROP_STEP,
-              "int",
-              iterationsProps,
-              (long) Integer.MIN_VALUE,
-              (long) Integer.MAX_VALUE
+              iterationProps
           );
-          int iterationStart = iterationStartField.intValue();
-          int iterationRestart;
-          int iterationStep;
-          if (iterationRestartField == null && iterationStepField == null) {
-            iterationRestart = Integer.MAX_VALUE;
-            iterationStep = 1;
-          } else if (iterationRestartField == null) {
-            iterationStep = iterationStepField.intValue();
-            if (iterationStep > 0) {
-              iterationRestart = Integer.MAX_VALUE;
-            } else if (iterationStep < 0) {
-              iterationRestart = Integer.MIN_VALUE;
-            } else {
-              throw new RuntimeException(String.format(
-                  "%s field of %s property cannot be zero",
-                  ITERATION_PROP_STEP,
-                  ITERATION_PROP
-              ));
-            }
-          } else if (iterationStepField == null) {
-            iterationRestart = iterationRestartField.intValue();
-            if (iterationRestart > iterationStart) {
-              iterationStep = 1;
-            } else if (iterationRestart < iterationStart) {
-              iterationStep = -1;
-            } else {
-              throw new RuntimeException(String.format(
-                  "%s and %s fields of %s property cannot be equal",
-                  ITERATION_PROP_START,
-                  ITERATION_PROP_RESTART,
-                  ITERATION_PROP
-              ));
-            }
-          } else {
-            iterationRestart = iterationRestartField.intValue();
-            iterationStep = iterationStepField.intValue();
-            if (iterationStep == 0) {
-              throw new RuntimeException(String.format(
-                  "%s field of %s property cannot be zero",
-                  ITERATION_PROP_STEP,
-                  ITERATION_PROP
-              ));
-            }
-            if (iterationStart == iterationRestart) {
-              throw new RuntimeException(String.format(
-                  "%s and %s fields of %s property cannot be equal",
-                  ITERATION_PROP_START,
-                  ITERATION_PROP_RESTART,
-                  ITERATION_PROP
-              ));
-            }
-            if (iterationRestart > iterationStart && iterationStep < 0) {
-              throw new RuntimeException(String.format(
-                  "%s field of %s property must be positive when %s field is greater than %s field",
-                  ITERATION_PROP_STEP,
-                  ITERATION_PROP,
-                  ITERATION_PROP_RESTART,
-                  ITERATION_PROP_START
-              ));
-            }
-            if (iterationRestart < iterationStart && iterationStep > 0) {
-              throw new RuntimeException(String.format(
-                  "%s field of %s property must be negative when %s field is less than %s field",
-                  ITERATION_PROP_STEP,
-                  ITERATION_PROP,
-                  ITERATION_PROP_RESTART,
-                  ITERATION_PROP_START
-              ));
-            }
-          }
-          return new IntegralIterator(
-              iterationStart,
-              iterationRestart,
-              iterationStep,
+          return getIntegralIterator(
+              iterationStartField != null ? iterationStartField.longValue() : null,
+              iterationRestartField != null ? iterationRestartField.longValue() : null,
+              iterationStepField != null ? iterationStepField.longValue() : null,
               IntegralIterator.Type.INTEGER
           );
         }
@@ -520,208 +628,45 @@ public class Generator {
           Long iterationStartField = getIntegralNumberField(
               ITERATION_PROP,
               ITERATION_PROP_START,
-              iterationsProps
+              iterationProps
           );
-          if (iterationStartField == null) {
-            throw new RuntimeException(String.format(
-                "%s property must contain %s field",
-                ITERATION_PROP,
-                ITERATION_PROP_START
-            ));
-          }
           Long iterationRestartField = getIntegralNumberField(
               ITERATION_PROP,
               ITERATION_PROP_RESTART,
-              iterationsProps
+              iterationProps
           );
           Long iterationStepField = getIntegralNumberField(
               ITERATION_PROP,
               ITERATION_PROP_STEP,
-              iterationsProps
+              iterationProps
           );
-          long iterationStart = iterationStartField;
-          long iterationRestart;
-          long iterationStep;
-          if (iterationRestartField == null && iterationStepField == null) {
-            iterationRestart = Long.MAX_VALUE;
-            iterationStep = 1;
-          } else if (iterationRestartField == null) {
-            iterationStep = iterationStepField;
-            if (iterationStep > 0) {
-              iterationRestart = Long.MAX_VALUE;
-            } else if (iterationStep < 0) {
-              iterationRestart = Long.MIN_VALUE;
-            } else {
-              throw new RuntimeException(String.format(
-                  "%s field of %s property cannot be zero",
-                  ITERATION_PROP_STEP,
-                  ITERATION_PROP
-              ));
-            }
-          } else if (iterationStepField == null) {
-            iterationRestart = iterationRestartField;
-            if (iterationRestart > iterationStart) {
-              iterationStep = 1;
-            } else if (iterationRestart < iterationStart) {
-              iterationStep = -1;
-            } else {
-              throw new RuntimeException(String.format(
-                  "%s and %s fields of %s property cannot be equal",
-                  ITERATION_PROP_START,
-                  ITERATION_PROP_RESTART,
-                  ITERATION_PROP
-              ));
-            }
-          } else {
-            iterationRestart = iterationRestartField;
-            iterationStep = iterationStepField;
-            if (iterationStep == 0) {
-              throw new RuntimeException(String.format(
-                  "%s field of %s property cannot be zero",
-                  ITERATION_PROP_STEP,
-                  ITERATION_PROP
-              ));
-            }
-            if (iterationStart == iterationRestart) {
-              throw new RuntimeException(String.format(
-                  "%s and %s fields of %s property cannot be equal",
-                  ITERATION_PROP_START,
-                  ITERATION_PROP_RESTART,
-                  ITERATION_PROP
-              ));
-            }
-            if (iterationRestart > iterationStart && iterationStep < 0) {
-              throw new RuntimeException(String.format(
-                  "%s field of %s property must be positive when %s field is greater than %s field",
-                  ITERATION_PROP_STEP,
-                  ITERATION_PROP,
-                  ITERATION_PROP_RESTART,
-                  ITERATION_PROP_START
-              ));
-            }
-            if (iterationRestart < iterationStart && iterationStep > 0) {
-              throw new RuntimeException(String.format(
-                  "%s field of %s property must be negative when %s field is less than %s field",
-                  ITERATION_PROP_STEP,
-                  ITERATION_PROP,
-                  ITERATION_PROP_RESTART,
-                  ITERATION_PROP_START
-              ));
-            }
-          }
-          return new IntegralIterator(
-              iterationStart,
-              iterationRestart,
-              iterationStep,
+          return getIntegralIterator(
+              iterationStartField,
+              iterationRestartField,
+              iterationStepField,
               IntegralIterator.Type.LONG
           );
         }
         case FLOAT: {
-          Double iterationStartField = getDecimalNumberField(
+          Float iterationStartField = getFloatNumberField(
               ITERATION_PROP,
               ITERATION_PROP_START,
-              "float",
-              iterationsProps,
-              -1.0 * Float.MAX_VALUE,
-              (double) Float.MAX_VALUE
+              iterationProps
           );
-          if (iterationStartField == null) {
-            throw new RuntimeException(String.format(
-                "%s property must contain %s field",
-                ITERATION_PROP,
-                ITERATION_PROP_START
-            ));
-          }
-          Double iterationRestartField = getDecimalNumberField(
+          Float iterationRestartField = getFloatNumberField(
               ITERATION_PROP,
               ITERATION_PROP_RESTART,
-              "float",
-              iterationsProps,
-              -1.0 * Float.MAX_VALUE,
-              (double) Float.MAX_VALUE
+              iterationProps
           );
-          Double iterationStepField = getDecimalNumberField(
+          Float iterationStepField = getFloatNumberField(
               ITERATION_PROP,
               ITERATION_PROP_STEP,
-              "float",
-              iterationsProps,
-              -1.0 * Float.MAX_VALUE,
-              (double) Float.MAX_VALUE
+              iterationProps
           );
-          float iterationStart = iterationStartField.floatValue();
-          float iterationRestart;
-          float iterationStep;
-          if (iterationRestartField == null && iterationStepField == null) {
-            iterationRestart = Float.MAX_VALUE;
-            iterationStep = 1;
-          } else if (iterationRestartField == null) {
-            iterationStep = iterationStepField.floatValue();
-            if (iterationStep > 0) {
-              iterationRestart = Float.MAX_VALUE;
-            } else if (iterationStep < 0) {
-              iterationRestart = -1 * Float.MIN_VALUE;
-            } else {
-              throw new RuntimeException(String.format(
-                  "%s field of %s property cannot be zero",
-                  ITERATION_PROP_STEP,
-                  ITERATION_PROP
-              ));
-            }
-          } else if (iterationStepField == null) {
-            iterationRestart = iterationRestartField.floatValue();
-            if (iterationRestart > iterationStart) {
-              iterationStep = 1;
-            } else if (iterationRestart < iterationStart) {
-              iterationStep = -1;
-            } else {
-              throw new RuntimeException(String.format(
-                  "%s and %s fields of %s property cannot be equal",
-                  ITERATION_PROP_START,
-                  ITERATION_PROP_RESTART,
-                  ITERATION_PROP
-              ));
-            }
-          } else {
-            iterationRestart = iterationRestartField.floatValue();
-            iterationStep = iterationStepField.floatValue();
-            if (iterationStep == 0) {
-              throw new RuntimeException(String.format(
-                  "%s field of %s property cannot be zero",
-                  ITERATION_PROP_STEP,
-                  ITERATION_PROP
-              ));
-            }
-            if (iterationStart == iterationRestart) {
-              throw new RuntimeException(String.format(
-                  "%s and %s fields of %s property cannot be equal",
-                  ITERATION_PROP_START,
-                  ITERATION_PROP_RESTART,
-                  ITERATION_PROP
-              ));
-            }
-            if (iterationRestart > iterationStart && iterationStep < 0) {
-              throw new RuntimeException(String.format(
-                  "%s field of %s property must be positive when %s field is greater than %s field",
-                  ITERATION_PROP_STEP,
-                  ITERATION_PROP,
-                  ITERATION_PROP_RESTART,
-                  ITERATION_PROP_START
-              ));
-            }
-            if (iterationRestart < iterationStart && iterationStep > 0) {
-              throw new RuntimeException(String.format(
-                  "%s field of %s property must be negative when %s field is less than %s field",
-                  ITERATION_PROP_STEP,
-                  ITERATION_PROP,
-                  ITERATION_PROP_RESTART,
-                  ITERATION_PROP_START
-              ));
-            }
-          }
-          return new DecimalIterator(
-              iterationStart,
-              iterationRestart,
-              iterationStep,
+          return getDecimalIterator(
+              iterationStartField != null ? iterationStartField.doubleValue() : null,
+              iterationRestartField != null ? iterationRestartField.doubleValue() : null,
+              iterationStepField != null ? iterationStepField.doubleValue() : null,
               DecimalIterator.Type.FLOAT
           );
         }
@@ -729,99 +674,22 @@ public class Generator {
           Double iterationStartField = getDecimalNumberField(
               ITERATION_PROP,
               ITERATION_PROP_START,
-              iterationsProps
+              iterationProps
           );
-          if (iterationStartField == null) {
-            throw new RuntimeException(String.format(
-                "%s property must contain %s field",
-                ITERATION_PROP,
-                ITERATION_PROP_START
-            ));
-          }
           Double iterationRestartField = getDecimalNumberField(
               ITERATION_PROP,
               ITERATION_PROP_RESTART,
-              iterationsProps
+              iterationProps
           );
           Double iterationStepField = getDecimalNumberField(
               ITERATION_PROP,
               ITERATION_PROP_STEP,
-              iterationsProps
+              iterationProps
           );
-          double iterationStart = iterationStartField;
-          double iterationRestart;
-          double iterationStep;
-          if (iterationRestartField == null && iterationStepField == null) {
-            iterationRestart = Double.MAX_VALUE;
-            iterationStep = 1;
-          } else if (iterationRestartField == null) {
-            iterationStep = iterationStepField;
-            if (iterationStep > 0) {
-              iterationRestart = Double.MAX_VALUE;
-            } else if (iterationStep < 0) {
-              iterationRestart = -1 * Double.MIN_VALUE;
-            } else {
-              throw new RuntimeException(String.format(
-                  "%s field of %s property cannot be zero",
-                  ITERATION_PROP_STEP,
-                  ITERATION_PROP
-              ));
-            }
-          } else if (iterationStepField == null) {
-            iterationRestart = iterationRestartField;
-            if (iterationRestart > iterationStart) {
-              iterationStep = 1;
-            } else if (iterationRestart < iterationStart) {
-              iterationStep = -1;
-            } else {
-              throw new RuntimeException(String.format(
-                  "%s and %s fields of %s property cannot be equal",
-                  ITERATION_PROP_START,
-                  ITERATION_PROP_RESTART,
-                  ITERATION_PROP
-              ));
-            }
-          } else {
-            iterationRestart = iterationRestartField;
-            iterationStep = iterationStepField;
-            if (iterationStep == 0) {
-              throw new RuntimeException(String.format(
-                  "%s field of %s property cannot be zero",
-                  ITERATION_PROP_STEP,
-                  ITERATION_PROP
-              ));
-            }
-            if (iterationStart == iterationRestart) {
-              throw new RuntimeException(String.format(
-                  "%s and %s fields of %s property cannot be equal",
-                  ITERATION_PROP_START,
-                  ITERATION_PROP_RESTART,
-                  ITERATION_PROP
-              ));
-            }
-            if (iterationRestart > iterationStart && iterationStep < 0) {
-              throw new RuntimeException(String.format(
-                  "%s field of %s property must be positive when %s field is greater than %s field",
-                  ITERATION_PROP_STEP,
-                  ITERATION_PROP,
-                  ITERATION_PROP_RESTART,
-                  ITERATION_PROP_START
-              ));
-            }
-            if (iterationRestart < iterationStart && iterationStep > 0) {
-              throw new RuntimeException(String.format(
-                  "%s field of %s property must be negative when %s field is less than %s field",
-                  ITERATION_PROP_STEP,
-                  ITERATION_PROP,
-                  ITERATION_PROP_RESTART,
-                  ITERATION_PROP_START
-              ));
-            }
-          }
-          return new DecimalIterator(
-              iterationStart,
-              iterationRestart,
-              iterationStep,
+          return getDecimalIterator(
+              iterationStartField,
+              iterationRestartField,
+              iterationStepField,
               DecimalIterator.Type.DOUBLE
           );
         }
@@ -836,7 +704,7 @@ public class Generator {
       throw new RuntimeException(String.format(
           "%s prop must be an object, was %s instead",
           ITERATION_PROP,
-          iterationsProp.getClass().getName()
+          iterationProp.getClass().getName()
       ));
     }
   }
@@ -859,11 +727,16 @@ public class Generator {
   }
 
   private Boolean generateBoolean(Map propertiesProp) {
-    Double odds =
-        getDecimalNumberField(ARG_PROPERTIES_PROP, ODDS_PROP, "number", propertiesProp, 0.0, 1.0);
+    Double odds = getDecimalNumberField(ARG_PROPERTIES_PROP, ODDS_PROP, propertiesProp);
     if (odds == null) {
       return random.nextBoolean();
     } else {
+      if (odds < 0.0 || odds > 1.0) {
+        throw new RuntimeException(String.format(
+            "%s property must be in the range [0.0, 1.0]",
+            ODDS_PROP
+        ));
+      }
       return random.nextDouble() < odds;
     }
   }
@@ -919,24 +792,18 @@ public class Generator {
     if (rangeProp != null) {
       if (rangeProp instanceof Map) {
         Map rangeProps = (Map) rangeProp;
-        Double rangeMinField = getDecimalNumberField(
+        Float rangeMinField = getFloatNumberField(
             RANGE_PROP,
             RANGE_PROP_MIN,
-            "float",
-            rangeProps,
-            (double) (-1 * Float.MAX_VALUE),
-            (double) Float.MAX_VALUE
+            rangeProps
         );
-        Double rangeMaxField = getDecimalNumberField(
+        Float rangeMaxField = getFloatNumberField(
             RANGE_PROP,
             RANGE_PROP_MAX,
-            "float",
-            rangeProps,
-            (double) (-1 * Float.MAX_VALUE),
-            (double) Float.MAX_VALUE
+            rangeProps
         );
-        float rangeMin = rangeMinField != null ? rangeMinField.floatValue() : -1 * Float.MAX_VALUE;
-        float rangeMax = rangeMaxField != null ? rangeMaxField.floatValue() : Float.MAX_VALUE;
+        float rangeMin = Optional.ofNullable(rangeMinField).orElse(-1 * Float.MAX_VALUE);
+        float rangeMax = Optional.ofNullable(rangeMaxField).orElse(Float.MAX_VALUE);
         if (rangeMin >= rangeMax) {
           throw new RuntimeException(String.format(
               "'%s' field must be strictly less than '%s' field in %s property",
@@ -956,24 +823,10 @@ public class Generator {
     if (rangeProp != null) {
       if (rangeProp instanceof Map) {
         Map rangeProps = (Map) rangeProp;
-        Long rangeMinField = getIntegralNumberField(
-            RANGE_PROP,
-            RANGE_PROP_MIN,
-            "int",
-            rangeProps,
-            (long) Integer.MIN_VALUE,
-            (long) Integer.MAX_VALUE
-        );
-        Long rangeMaxField = getIntegralNumberField(
-            RANGE_PROP,
-            RANGE_PROP_MAX,
-            "int",
-            rangeProps,
-            (long) Integer.MIN_VALUE,
-            (long) Integer.MAX_VALUE
-        );
-        int rangeMin = rangeMinField != null ? rangeMinField.intValue() : Integer.MIN_VALUE;
-        int rangeMax = rangeMaxField != null ? rangeMaxField.intValue() : Integer.MAX_VALUE;
+        Integer rangeMinField = getIntegerNumberField(RANGE_PROP, RANGE_PROP_MIN, rangeProps);
+        Integer rangeMaxField = getIntegerNumberField(RANGE_PROP, RANGE_PROP_MAX, rangeProps);
+        int rangeMin = Optional.ofNullable(rangeMinField).orElse(Integer.MIN_VALUE);
+        int rangeMax = Optional.ofNullable(rangeMaxField).orElse(Integer.MAX_VALUE);
         if (rangeMin >= rangeMax) {
           throw new RuntimeException(String.format(
               "'%s' field must be strictly less than '%s' field in %s property",
@@ -995,8 +848,8 @@ public class Generator {
         Map rangeProps = (Map) rangeProp;
         Long rangeMinField = getIntegralNumberField(RANGE_PROP, RANGE_PROP_MIN, rangeProps);
         Long rangeMaxField = getIntegralNumberField(RANGE_PROP, RANGE_PROP_MAX, rangeProps);
-        long rangeMin = rangeMinField != null ? rangeMinField : Long.MIN_VALUE;
-        long rangeMax = rangeMaxField != null ? rangeMaxField : Long.MAX_VALUE;
+        long rangeMin = Optional.ofNullable(rangeMinField).orElse(Long.MIN_VALUE);
+        long rangeMax = Optional.ofNullable(rangeMaxField).orElse(Long.MAX_VALUE);
         if (rangeMin >= rangeMax) {
           throw new RuntimeException(String.format(
               "'%s' field must be strictly less than '%s' field in %s property",
@@ -1101,23 +954,18 @@ public class Generator {
     if (lengthProp == null) {
       return new LengthBounds();
     } else if (lengthProp instanceof Integer) {
-      return new LengthBounds((Integer) lengthProp);
+      Integer length = (Integer) lengthProp;
+      if (length < 0) {
+        throw new RuntimeException(String.format(
+            "when given as integral number, %s property cannot be negative",
+            LENGTH_PROP
+        ));
+      }
+      return new LengthBounds(length);
     } else if (lengthProp instanceof Map) {
       Map lengthProps = (Map) lengthProp;
-      Long minLength = getIntegralNumberField(
-          LENGTH_PROP,
-          LENGTH_PROP_MIN,
-          lengthProps,
-          0L,
-          (long) (Integer.MAX_VALUE - 1)
-      );
-      Long maxLength = getIntegralNumberField(
-          LENGTH_PROP,
-          LENGTH_PROP_MAX,
-          lengthProps,
-          1L,
-          (long) Integer.MAX_VALUE
-      );
+      Integer minLength = getIntegerNumberField(LENGTH_PROP, LENGTH_PROP_MIN, lengthProps);
+      Integer maxLength = getIntegerNumberField(LENGTH_PROP, LENGTH_PROP_MAX, lengthProps);
       if (minLength == null && maxLength == null) {
         throw new RuntimeException(String.format(
             "%s property must contain at least one of '%s' or '%s' fields when given as object",
@@ -1128,7 +976,22 @@ public class Generator {
       }
       minLength = minLength != null ? minLength : 0;
       maxLength = maxLength != null ? maxLength : Integer.MAX_VALUE;
-      return new LengthBounds(minLength.intValue(), maxLength.intValue());
+      if (minLength < 0) {
+        throw new RuntimeException(String.format(
+           "%s field of %s property cannot be negative",
+            LENGTH_PROP_MIN,
+            LENGTH_PROP
+        ));
+      }
+      if (maxLength <= minLength) {
+        throw new RuntimeException(String.format(
+            "%s field must be strictly greater than %s field for %s property",
+            LENGTH_PROP_MAX,
+            LENGTH_PROP_MIN,
+            LENGTH_PROP
+        ));
+      }
+      return new LengthBounds(minLength, maxLength);
     } else {
       throw new RuntimeException(String.format(
           "%s property must either be an integral number or an object, was %s instead",
@@ -1138,44 +1001,16 @@ public class Generator {
     }
   }
 
-  private Long getIntegralNumberField(
-      String property,
-      String field,
-      String type,
-      Map propsMap,
-      Long min,
-      Long max) {
+  private Integer getIntegerNumberField(String property, String field, Map propsMap) {
     Long result = getIntegralNumberField(property, field, propsMap);
-    if (result != null && (result < min || result > max)) {
+    if (result != null && (result < Integer.MIN_VALUE || result > Integer.MAX_VALUE)) {
       throw new RuntimeException(String.format(
-          "'%s' field of %s property must be in the range [%d, %d] for type %s",
+          "'%s' field of %s property must be a valid int for int schemas",
           field,
-          property,
-          min,
-          max,
-          type
+          property
       ));
     }
-    return result;
-  }
-
-  private Long getIntegralNumberField(
-      String property,
-      String field,
-      Map propsMap,
-      Long min,
-      Long max) {
-    Long result = getIntegralNumberField(property, field, propsMap);
-    if (result != null && (result < min || result > max)) {
-      throw new RuntimeException(String.format(
-          "'%s' field of %s property must be in the range [%d, %d]",
-          field,
-          property,
-          min,
-          max
-      ));
-    }
-    return result;
+    return result != null ? result.intValue() : null;
   }
 
   private Long getIntegralNumberField(String property, String field, Map propsMap) {
@@ -1194,26 +1029,16 @@ public class Generator {
     }
   }
 
-  private Double getDecimalNumberField(
-      String property,
-      String field,
-      String type,
-      Map propsMap,
-      Double min,
-      Double max) {
+  private Float getFloatNumberField(String property, String field, Map propsMap) {
     Double result = getDecimalNumberField(property, field, propsMap);
-    if (result != null && (result < min || result > max)) {
+    if (result != null && (result > Float.MAX_VALUE || result < -1 * Float.MIN_VALUE)) {
       throw new RuntimeException(String.format(
-          "'%s' field of %s property must be in the range [%e, %e] for type %s",
+          "'%s' field of %s property must be a valid float for float schemas",
           field,
-          property,
-          min,
-          max,
-          type
+          property
       ));
-
     }
-    return result;
+    return result != null ? result.floatValue() : null;
   }
 
   private Double getDecimalNumberField(String property, String field, Map propsMap) {
@@ -1236,55 +1061,16 @@ public class Generator {
     }
   }
 
-  private static class Bounds {
-    protected final int min;
-    protected final int max;
-
-    public Bounds(int min, int max) {
-      if (min >= max) {
-        throw new IllegalArgumentException("max must be strictly greater than min");
-      }
-      this.min = min;
-      this.max = max;
-    }
-
-    public int min() {
-      return min;
-    }
-
-    public int max() {
-      return max;
-    }
-
-    @Override
-    public boolean equals(Object that) {
-      if (!(that instanceof Bounds)) {
-        return false;
-      }
-      Bounds thatBounds = (Bounds) that;
-      return min == thatBounds.min() && max == thatBounds.max();
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(min, max);
-    }
-
-    @Override
-    public String toString() {
-      return String.format("%s(%d, %d)", getClass().getName(), min, max);
-    }
-  }
-
-  private class LengthBounds extends Bounds {
+  private class LengthBounds {
     public static final int DEFAULT_MIN = 8;
     public static final int DEFAULT_MAX = 16;
 
+    private final int min;
+    private final int max;
+
     public LengthBounds(int min, int max) {
-      super(min, max);
-      if (min < 0) {
-        throw new IllegalArgumentException("min must be at least zero");
-      }
+      this.min = min;
+      this.max = max;
     }
 
     public LengthBounds(int exact) {
@@ -1297,6 +1083,14 @@ public class Generator {
 
     public int random() {
       return min + random.nextInt(max - min);
+    }
+
+    public int min() {
+      return min;
+    }
+
+    public int max() {
+      return max;
     }
   }
 
