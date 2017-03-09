@@ -2,6 +2,7 @@ apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'checkstyle'
 apply plugin: 'findbugs'
+apply plugin: 'maven'
 
 sourceCompatibility = 1.8
 version = '0.1-SNAPSHOT'
@@ -34,6 +35,27 @@ clean.doLast {
 
 repositories {
     jcenter()
+    maven {
+        url 'https://nexus.confluent.io/repository/maven-snapshots/'
+    }
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            def userName = findProperty('nexusUsername') ?: ''
+            def password = findProperty('nexusPassword') ?: ''
+            snapshotRepository(url: 'https://nexus.confluent.io/repository/maven-snapshots/') {
+                authentication(userName: userName, password: password)
+            }
+            repository(url: 'https://nexus.confluent.io/repository/maven-public/') {
+                authentication(userName: userName, password: password)
+            }
+            pom.groupId = 'io.confluent.avro'
+            pom.artifactId = 'random-generator'
+            pom.version = project.version
+        }
+    }
 }
 
 dependencies {
