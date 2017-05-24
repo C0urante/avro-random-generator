@@ -24,9 +24,20 @@ apply plugin: 'idea'
 apply plugin: 'checkstyle'
 apply plugin: 'findbugs'
 apply plugin: 'maven'
+apply plugin: 'signing'
 
 sourceCompatibility = 1.8
+
+group = 'io.confluent.avro'
+archivesBaseName = 'avro-random-generator'
 version = '0.1-SNAPSHOT'
+
+signing {
+    sign configurations.archives
+    required {
+        gradle.taskGraph.hasTask('uploadArchives')
+    }
+}
 
 jar {
     manifest {
@@ -64,19 +75,73 @@ repositories {
 uploadArchives {
     repositories {
         mavenDeployer {
-            def userName = findProperty('nexusUsername') ?: ''
-            def password = findProperty('nexusPassword') ?: ''
-            snapshotRepository(url: 'https://nexus.confluent.io/repository/maven-snapshots/') {
-                authentication(userName: userName, password: password)
+            beforeDeployment {
+                MavenDeployment deployment -> signing.signPom(deployment)
             }
-            repository(url: 'https://nexus.confluent.io/repository/maven-public/') {
-                authentication(userName: userName, password: password)
-            }
-            pom.groupId = 'io.confluent.avro'
-            pom.artifactId = 'random-generator'
+
+            pom.groupId = project.group
+            pom.artifactId = 'avro-random-generator'
             pom.version = project.version
+
+            def nexusUserName = findProperty('nexusUserName') ?: ''
+            def nexusPassword = findProperty('nexusPassword') ?: ''
+            if (nexusUserName != '' && nexusPassword != '') {
+                snapshotRepository(url: 'https://nexus.confluent.io/repository/maven-snapshots/') {
+                    authentication(userName: nexusUserName, password: nexusPassword)
+                }
+                repository(url: 'https://nexus.confluent.io/repository/maven-public/') {
+                    authentication(userName: nexusUserName, password: nexusPassword)
+                }
+                println 'Nexus credentials provided; archive uploading enabled'
+            } else {
+                println 'No Nexus credentials provided; archive uploading disabled'
+            }
+
+            def sonatypeUserName = findProperty('sonatypeUserName') ?: ''
+            def sonatypePassword = findProperty('sonatypePassword') ?: ''
+            if (sonatypeUserName != '' && sonatypePassword != '') {
+                snapshotRepository(url: 'https://oss.sonatype.org/content/repositories/snapshots') {
+                    authentication(userName: sonatypeUserName, password: sonatypePassword)
+                }
+                repository(url: 'https://oss.sonatype.org/service/local/staging/deploy/maven2/') {
+                    authentication(userName: sonatypeUserName, password: sonatypePassword)
+                }
+                println 'Sonatype credentials provided; archive uploading enabled'
+            } else {
+                println 'No Sonatype credentials provided; archive uploading disabled'
+            }
+
+            pom.project {
+                name 'Avro Random Generator'
+                description 'Avro Random Generator is a tool for randomly generating data to match Avro schemas'
+                url 'https://github.com:C0urante/avro-random-generator'
+
+                scm {
+                    url 'https://github.com:C0urante/avro-random-generator'
+                    connection 'scm:git:ssh://github.com:C0urante/avro-random-generator.git'
+                    developerConnection 'scm:git:ssh://github.com:C0urante/avro-random-generator.git'
+                }
+
+                licenses {
+                    license {
+                        name 'The MIT License (MIT)'
+                        url 'https://opensource.org/licenses/MIT'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id 'C0urante'
+                        name 'Chris Egerton'
+                    }
+                }
+            }
         }
     }
+}
+
+artifacts {
+    archives distribute
 }
 
 dependencies {
