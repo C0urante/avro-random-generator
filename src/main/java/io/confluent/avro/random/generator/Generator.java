@@ -53,6 +53,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -67,7 +68,8 @@ public class Generator {
   private static final Schema.Parser schemaParser = new Schema.Parser();
   private static final Map<Schema, Generex> generexCache = new HashMap<>();
   private static final Map<Schema, List<Object>> optionsCache = new HashMap<>();
-  private static final Map<Schema, Iterator<Object>> iteratorCache = new HashMap<>();
+  private static final Map<Schema, Iterator<Object>> iteratorCache =
+    new IdentityHashMap<>();
 
   /**
    * The name to use for the top-level JSON property when specifying ARG-specific attributes.
