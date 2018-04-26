@@ -37,7 +37,7 @@ cause any issues if present when the schema is used with other programs.
 ## Building
 
 ```
-$ ./gradlew distribute
+$ ./gradlew standalone
 ```
 
 ## CLI Usage
