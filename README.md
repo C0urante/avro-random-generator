@@ -1,3 +1,6 @@
+As of April 2018, this project has migrated to https://github.com/confluentinc/avro-random-generator
+and all development on the original repository owned by C0urante has since ceased.
+
 # Arg: Avro Random Generator
 
 __NOTE: Building is required to run the program.__
