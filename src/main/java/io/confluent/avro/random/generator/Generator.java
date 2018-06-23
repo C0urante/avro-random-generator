@@ -9,8 +9,6 @@ package io.confluent.avro.random.generator;
 
 import com.mifmif.common.regex.Generex;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-
 import org.apache.avro.Schema;
 
 import org.apache.avro.generic.GenericData;
@@ -1291,10 +1289,6 @@ public class Generator {
     }
 
     @Override
-    @SuppressFBWarnings(
-        value = "IT_NO_SUCH_ELEMENT",
-        justification = "This iterator is infinite."
-    )
     public Object next() {
       long result = current;
       if ((step > 0 && current >= restart - step) || (step < 0 && current <= restart - step)) {
@@ -1344,10 +1338,6 @@ public class Generator {
     }
 
     @Override
-    @SuppressFBWarnings(
-        value = "IT_NO_SUCH_ELEMENT",
-        justification = "This iterator is infinite."
-    )
     public Object next() {
       double result = current;
       if ((step > 0 && current >= restart - step) || (step < 0 && current <= restart - step)) {
@@ -1385,10 +1375,6 @@ public class Generator {
     }
 
     @Override
-    @SuppressFBWarnings(
-        value = "IT_NO_SUCH_ELEMENT",
-        justification = "This iterator is infinite."
-    )
     public Boolean next() {
       boolean result = current;
       current = !current;
